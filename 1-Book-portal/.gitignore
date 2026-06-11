@@ -1,4 +1,6 @@
 venv/
 db.sqlite3
 .env
-__pycache__
+book/book/__pycache__
+book/book_app/__pycache__
+book/book_app/migrations/__pycache__

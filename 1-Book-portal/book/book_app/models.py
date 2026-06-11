@@ -3,10 +3,10 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Author(models.Model):
-    name=models.CharField(max_length=255)
+    fullname=models.CharField(max_length=255)
     biography=models.TextField(blank=True)
     def __str__(self):
-        return self.name
+        return self.fullname
 
 class Genre(models.Model):
     name=models.CharField(max_length=255, unique=True)
@@ -19,7 +19,7 @@ class Book(models.Model):
         on_delete=models.CASCADE,
         related_name='added_books'
     )
-    name=models.CharField(max_length=255)
+    title=models.CharField(max_length=255)
     description=models.TextField(blank=True)
     published_year=models.PositiveIntegerField(null=True, blank=True)
     created_at=models.DateTimeField(auto_now_add=True)
@@ -37,13 +37,13 @@ class Book(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['added_by', 'name', 'author'],
-                name='unique_book_per_addedby_name_author'
+                fields=['added_by', 'title', 'author'],
+                name='unique_book_per_addedby_title_author'
             )
         ]
 
     def __str__(self):
-        return self.name
+        return self.title
 
 class Review(models.Model):
     added_by=models.ForeignKey(

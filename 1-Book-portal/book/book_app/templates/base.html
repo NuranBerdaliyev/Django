@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}Book Portal{% endblock %}</title>
+    </head>
+    <body>
+
+        <nav>
+            <a href="{% url 'book_list' %}">Books</a> |
+            <a href="{% url 'author_list' %}">Authors</a> |
+            <a href="{% url 'genre_list' %}">Genres</a> |
+            <a href="{% url 'review_list' %}">Reviews</a>
+        </nav>
+
+        <hr>
+
+        {% block content %}
+        {% endblock %}
+
+    </body>
+</html>

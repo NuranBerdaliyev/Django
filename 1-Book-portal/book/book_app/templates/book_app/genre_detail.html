@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ genre.name }}
+{% endblock %}
+
+{% block content %}
+
+<h1>{{ genre.name }}</h1>
+
+<h2>Books</h2>
+{% for book in genre.books.all %}
+    <div>
+        <a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a>
+    </div>
+{% empty %}
+    Doesn't have books.
+{% endfor %}
+
+
+{% endblock %}

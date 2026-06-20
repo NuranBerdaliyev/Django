@@ -17,7 +17,7 @@ urlpatterns=[
     path('books/<int:pk>/edit/', BookUpdateView.as_view(), name='book_update'),
     path('books/<int:pk>/delete/', BookDeleteView.as_view(), name='book_delete'),
 
-    path('reviews/', ReviewCreateView.as_view(), name='review_list'),
+    path('reviews/', ReviewListView.as_view(), name='review_list'),
     path('reviews/<int:pk>/', ReviewDetailView.as_view(), name='review_detail'),
     path('books/<int:pk>/reviews/add/', ReviewCreateView.as_view(), name='review_create'),
     path('review/<int:pk>/edit/', ReviewUpdateView.as_view(), name='review_update'),

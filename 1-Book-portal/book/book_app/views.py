@@ -1,5 +1,10 @@
-from django.views.generic import ListView, DetailView
+from django.views.generic import (
+    ListView, DetailView,
+    CreateView,    
+)
+from django.urls import reverse_lazy
 from .models import Book, Author, Genre, Review
+from .forms import BookForm, ReviewForm
 
 class BookListView(ListView):
     model=Book
@@ -18,6 +23,15 @@ class BookDetailView(DetailView):
         'reviews'
     )
 
+class BookCreateView(CreateView):
+    model=Book
+    form_class=BookForm
+    success_url=reverse_lazy('book_list')
+
+    def form_valid(self, form):
+        form.instance.added_by=self.request.user
+        return super().form_valid(form)
+    
 class AuthorListView(ListView):
     model=Author
     context_object_name='authors'
@@ -46,3 +60,19 @@ class ReviewDetailView(DetailView):
     queryset=Review.objects.select_related(
         'book', 'added_by'
     )
+
+class ReviewCreateView(CreateView):
+    model=Review
+    form_class=ReviewForm
+    success_url=reverse_lazy('review_list')
+
+    def form_valid(self, form):
+        form.instance.added_by=self.request.user
+        form.instance.book_id=self.kwargs['pk']
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy(
+            'book_detail', 
+            kwargs={'pk': self.kwargs['pk']}
+        )

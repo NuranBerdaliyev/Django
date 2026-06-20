@@ -6,16 +6,27 @@
 
 {% block content %}
 
-<h1>{{ genre.name }}</h1>
+    <h2>Genre: {{ genre.name }}</h2>
 
-<h2>Books</h2>
-{% for book in genre.books.all %}
-    <div>
-        <a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a>
-    </div>
-{% empty %}
-    Doesn't have books.
-{% endfor %}
+    <h3>Books in this genre</h3>
 
+    {% for book in genre.books.all %}
+        <article>
+            <h4>
+                <a href="{% url 'book_detail' book.pk %}">
+                    {{ book.title }}
+                </a>
+            </h4>
+
+            <p>
+                Author:
+                <a href="{% url 'author_detail' book.author.pk %}">
+                    {{ book.author.fullname }}
+                </a>
+            </p>
+        </article>
+    {% empty %}
+        <p>There are no books in this genre.</p>
+    {% endfor %}
 
 {% endblock %}

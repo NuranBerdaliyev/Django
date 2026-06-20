@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'book_app/base.html' %}
 
 {% block title %}
 {{ author.fullname }}
@@ -6,22 +6,27 @@
 
 {% block content %}
 
-<h1>{{ author.fullname }}</h1>
+    <h2>{{ author.fullname }}</h2>
 
-<h2>Biography</h2>
+    {% if author.biography %}
+        <h3>Biography</h3>
+        <p>{{ author.biography|linebreaks }}</p>
+    {% endif %}
 
-<p>{{ author.biography }}</p>
+    <h3>Books by this author</h3>
 
-<h2>Books</h2>
+    {% for book in author.books.all %}
+        <p>
+            <a href="{% url 'book_detail' book.pk %}">
+                {{ book.title }}
+            </a>
 
-{% for book in author.books.all %}
-    <div>
-        <a href="{% url 'book_detail' book.pk %}">
-            {{ book.title }}
-        </a>
-    </div>
-{% empty %}
-    <p>No books.</p>
-{% endfor %}
+            {% if book.published_year %}
+                ({{ book.published_year }})
+            {% endif %}
+        </p>
+    {% empty %}
+        <p>This author has no books yet.</p>
+    {% endfor %}
 
 {% endblock %}

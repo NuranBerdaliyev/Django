@@ -1,6 +1,7 @@
 from django.views.generic import (
     ListView, DetailView,
-    CreateView,    
+    CreateView, UpdateView,
+    DeleteView, 
 )
 from django.urls import reverse_lazy
 from .models import Book, Author, Genre, Review
@@ -20,7 +21,7 @@ class BookDetailView(DetailView):
         'author', 'added_by'
     ).prefetch_related(
         'genres',
-        'reviews'
+        'reviews__added_by'
     )
 
 class BookCreateView(CreateView):
@@ -31,6 +32,16 @@ class BookCreateView(CreateView):
     def form_valid(self, form):
         form.instance.added_by=self.request.user
         return super().form_valid(form)
+
+class BookUpdateView(UpdateView):
+    model=Book
+    form_class=BookForm
+    def get_success_url(self):
+        return reverse_lazy('book_detail', kwargs={'pk': self.object.pk})
+    
+class BookDeleteView(DeleteView):
+    model=Book
+    success_url=reverse_lazy('book_list')
     
 class AuthorListView(ListView):
     model=Author
@@ -64,7 +75,6 @@ class ReviewDetailView(DetailView):
 class ReviewCreateView(CreateView):
     model=Review
     form_class=ReviewForm
-    success_url=reverse_lazy('review_list')
 
     def form_valid(self, form):
         form.instance.added_by=self.request.user
@@ -76,3 +86,16 @@ class ReviewCreateView(CreateView):
             'book_detail', 
             kwargs={'pk': self.kwargs['pk']}
         )
+
+class ReviewUpdateView(UpdateView):
+    model=Review
+    form_class=ReviewForm
+
+    def get_success_url(self):
+        return reverse_lazy('book_detail', kwargs={'pk': self.object.book.pk})
+    
+class ReviewDeleteView(DeleteView):
+    model=Review
+    
+    def get_success_url(self):
+        return reverse_lazy('book_detail', kwargs={'pk': self.object.book.pk})

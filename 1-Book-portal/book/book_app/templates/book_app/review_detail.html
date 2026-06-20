@@ -1,20 +1,45 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Review of {{ review.added_by }} for {{ review.book }}
+Review for {{ review.book.title }}
 {% endblock %}
 
 {% block content %}
-<h1>Review</h1>
 
-<p>User: {{ review.added_by }}</p>
+    <article>
+        <h2>Review for "{{ review.book.title }}"</h2>
 
-<p>Book: {{ review.book }}</p>
+        <p>
+            <strong>Book:</strong>
+            <a href="{% url 'book_detail' review.book.pk %}">
+                {{ review.book.title }}
+            </a>
+        </p>
 
-<p>Rating: {{ review.rating }}</p>
+        <p>
+            <strong>Author of review:</strong>
+            {{ review.added_by.username }}
+        </p>
 
-<p>{{ review.text }}</p>
+        <p>
+            <strong>Rating:</strong>
+            {{ review.rating }}/5
+        </p>
 
-<p>{{ review.created_at }}</p>
+        <p>
+            <strong>Created:</strong>
+            {{ review.created_at|date:"d.m.Y H:i" }}
+        </p>
+
+        <hr>
+
+        <p>{{ review.text|linebreaks }}</p>
+    </article>
+
+    <p>
+        <a href="{% url 'book_detail' review.book.pk %}">
+            Back to book
+        </a>
+    </p>
 
 {% endblock %}

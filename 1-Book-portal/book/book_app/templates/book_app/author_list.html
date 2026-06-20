@@ -6,16 +6,16 @@ Authors
 
 {% block content %}
 
-    <h1>Authors</h1>
+    <h2>Authors</h2>
 
     {% for author in authors %}
-        <div>
+        <p>
             <a href="{% url 'author_detail' author.pk %}">
                 {{ author.fullname }}
             </a>
-        </div>
+        </p>
     {% empty %}
-        <p>No authors.</p>
+        <p>There are no authors yet.</p>
     {% endfor %}
 
 {% endblock %}

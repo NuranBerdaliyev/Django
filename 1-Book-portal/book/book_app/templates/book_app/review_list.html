@@ -6,16 +6,35 @@ Reviews
 
 {% block content %}
 
-    <h1>Reviews</h1>
+    <h2>All reviews</h2>
 
     {% for review in reviews %}
-        <div>
+        <article>
+            <p>
+                <strong>{{ review.added_by.username }}</strong>
+                reviewed
+                <a href="{% url 'book_detail' review.book.pk %}">
+                    {{ review.book.title }}
+                </a>
+            </p>
+
+            <p>
+                Rating: {{ review.rating }}/5
+            </p>
+
+            <p>
+                {{ review.text|truncatechars:180 }}
+            </p>
+
             <a href="{% url 'review_detail' review.pk %}">
-                {{ review.added_by }}|{{ review.book }}|{{ review.created_at }}
+                Read full review
             </a>
-        </div>
+        </article>
+
+        <hr>
+
     {% empty %}
-        <p>No reviews.</p>
+        <p>There are no reviews yet.</p>
     {% endfor %}
 
 {% endblock %}

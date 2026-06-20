@@ -6,16 +6,43 @@ Books
 
 {% block content %}
 
-    <h1>Books</h1>
+    <h2>Books</h2>
 
     {% for book in books %}
-        <div>
-            <a href="{% url 'book_detail' book.pk %}">
-                {{ book.title }}
-            </a>
-        </div>
+        <article>
+            <h3>
+                <a href="{% url 'book_detail' book.pk %}">
+                    {{ book.title }}
+                </a>
+            </h3>
+
+            <p>
+                Author:
+                <a href="{% url 'author_detail' book.author.pk %}">
+                    {{ book.author.fullname }}
+                </a>
+            </p>
+
+            {% if book.published_year %}
+                <p>Published: {{ book.published_year }}</p>
+            {% endif %}
+
+            {% if book.genres.all %}
+                <p>
+                    Genres:
+                    {% for genre in book.genres.all %}
+                        <a href="{% url 'genre_detail' genre.pk %}">
+                            {{ genre.name }}
+                        </a>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+            {% endif %}
+        </article>
+
+        <hr>
+
     {% empty %}
-        <p>No books.</p>
+        <p>There are no books yet.</p>
     {% endfor %}
 
 {% endblock %}

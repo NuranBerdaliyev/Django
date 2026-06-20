@@ -6,16 +6,16 @@ Genres
 
 {% block content %}
 
-    <h1>Genres</h1>
+    <h2>Genres</h2>
 
     {% for genre in genres %}
-        <div>
+        <p>
             <a href="{% url 'genre_detail' genre.pk %}">
                 {{ genre.name }}
             </a>
-        </div>
+        </p>
     {% empty %}
-        <p>No genres.</p>
+        <p>There are no genres yet.</p>
     {% endfor %}
 
 {% endblock %}

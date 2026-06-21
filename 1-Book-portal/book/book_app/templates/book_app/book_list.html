@@ -8,6 +8,12 @@ Books
 
     <h2>Books</h2>
 
+    {% if request.user.is_authenticated %}
+        <p>
+            <a href="{% url 'book_create' %}">Add book</a>
+        </p>
+    {% endif %}
+    
     {% for book in books %}
         <article>
             <h3>

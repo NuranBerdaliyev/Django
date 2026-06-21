@@ -44,6 +44,13 @@
         {% empty %}
             <p>This book has no genres.</p>
         {% endfor %}
+
+        {% if request.user == book.added_by %}
+            <p>
+                <a href="{% url 'book_update' book.pk %}">Edit book</a> |
+                <a href="{% url 'book_delete' book.pk %}">Delete book</a>
+            </p>
+        {% endif %}
     </article>
 
     <hr>
@@ -51,6 +58,13 @@
     <section>
         <h2>Reviews</h2>
 
+        {% if request.user.is_authenticated %}
+            <p>
+                <a href="{% url 'review_create' book.pk %}">
+                    Add review
+                </a>
+            </p>
+        {% endif %}
         {% for review in book.reviews.all %}
             <article>
                 <p>

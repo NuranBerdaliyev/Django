@@ -35,6 +35,15 @@ Review for {{ review.book.title }}
 
         <p>{{ review.text|linebreaks }}</p>
     </article>
+    {% if request.user == review.added_by %}
+        <a href="{% url 'review_update' review.pk %}">
+            Edit review
+        </a>
+        |
+        <a href="{% url 'review_delete' review.pk %}">
+            Delete review
+        </a>
+    {% endif %}
 
     <p>
         <a href="{% url 'book_detail' review.book.pk %}">

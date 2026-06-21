@@ -6,6 +6,7 @@ from django.views.generic import (
 from django.urls import reverse_lazy
 from .models import Book, Author, Genre, Review
 from .forms import BookForm, ReviewForm
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 class BookListView(ListView):
     model=Book
@@ -24,7 +25,7 @@ class BookDetailView(DetailView):
         'reviews__added_by'
     )
 
-class BookCreateView(CreateView):
+class BookCreateView(LoginRequiredMixin, CreateView):
     model=Book
     form_class=BookForm
     success_url=reverse_lazy('book_list')
@@ -33,15 +34,22 @@ class BookCreateView(CreateView):
         form.instance.added_by=self.request.user
         return super().form_valid(form)
 
-class BookUpdateView(UpdateView):
+class BookUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model=Book
     form_class=BookForm
+    def test_func(self):
+        book=self.get_object()
+        return book.added_by==self.request.user
     def get_success_url(self):
         return reverse_lazy('book_detail', kwargs={'pk': self.object.pk})
     
-class BookDeleteView(DeleteView):
+    
+class BookDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model=Book
     success_url=reverse_lazy('book_list')
+    def test_func(self):
+        book=self.get_object()
+        return book.added_by==self.request.user
     
 class AuthorListView(ListView):
     model=Author
@@ -72,7 +80,7 @@ class ReviewDetailView(DetailView):
         'book', 'added_by'
     )
 
-class ReviewCreateView(CreateView):
+class ReviewCreateView(LoginRequiredMixin, CreateView):
     model=Review
     form_class=ReviewForm
 
@@ -87,15 +95,24 @@ class ReviewCreateView(CreateView):
             kwargs={'pk': self.kwargs['pk']}
         )
 
-class ReviewUpdateView(UpdateView):
+class ReviewUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model=Review
     form_class=ReviewForm
 
+    def test_func(self):
+        review=self.get_object()
+        return review.added_by==self.request.user
+    
     def get_success_url(self):
         return reverse_lazy('book_detail', kwargs={'pk': self.object.book.pk})
     
-class ReviewDeleteView(DeleteView):
+    
+class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model=Review
+    
+    def test_func(self):
+        review=self.get_object()
+        return review.added_by==self.request.user
     
     def get_success_url(self):
         return reverse_lazy('book_detail', kwargs={'pk': self.object.book.pk})

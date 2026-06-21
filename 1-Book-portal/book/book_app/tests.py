@@ -60,7 +60,6 @@ class BookModelTest(TestCase):
 
 class ObjectPermissionsTests(TestCase):
     def setUp(self):
-        User = get_user_model()
 
         self.user_a = User.objects.create_user(
             username='user_a',
@@ -180,3 +179,53 @@ class ObjectPermissionsTests(TestCase):
         url = reverse('review_delete', kwargs={'pk': self.review.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+    
+    def test_other_user_can_view_book_detail(self):
+        self.client.force_login(self.user_b)
+        url = reverse('book_detail', kwargs={'pk': self.book.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_other_user_cannot_update_someone_elses_book_with_post(self):
+        self.client.force_login(self.user_b)
+
+        url = reverse('book_update', kwargs={'pk': self.book.pk})
+        response = self.client.post(url, {
+            'title': 'Hacked title',
+            'description': 'Changed by another user',
+            'published_year': 2026,
+            'author': self.author.pk,
+        })
+
+        self.assertEqual(response.status_code, 403)
+
+        self.book.refresh_from_db()
+        self.assertEqual(self.book.title, '1984')
+
+
+    def test_other_user_cannot_delete_someone_elses_book_with_post(self):
+        self.client.force_login(self.user_b)
+        url = reverse('book_delete', kwargs={'pk': self.book.pk})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Book.objects.filter(pk=self.book.pk).exists())
+
+
+    def test_other_user_cannot_update_someone_elses_review_with_post(self):
+        self.client.force_login(self.user_b)
+        url = reverse('review_update', kwargs={'pk': self.review.pk})
+        response = self.client.post(url, {
+            'rating': 1,
+            'text': 'Hacked review',
+        })
+        self.assertEqual(response.status_code, 403)
+        self.review.refresh_from_db()
+        self.assertEqual(self.review.rating, 5)
+
+
+    def test_other_user_cannot_delete_someone_elses_review_with_post(self):
+        self.client.force_login(self.user_b)
+        url = reverse('review_delete', kwargs={'pk': self.review.pk})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Review.objects.filter(pk=self.review.pk).exists())

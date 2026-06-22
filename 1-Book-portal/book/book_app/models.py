@@ -57,12 +57,6 @@ class Review(models.Model):
         related_name='reviews'
     )
     text=models.TextField()
-    rating=models.PositiveSmallIntegerField(
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(5),
-        ]
-    )
     created_at=models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -73,4 +67,35 @@ class Review(models.Model):
             )
         ]
     def __str__(self):
-        return f"{self.added_by} - {self.book} - {self.rating}"
+        return f"{self.added_by} - review for {self.book}"
+
+class Rating(models.Model):
+    added_by=models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='ratings'
+    )
+    book=models.ForeignKey(
+        Book,
+        on_delete=models.CASCADE,
+        related_name='ratings'
+    )
+    value=models.PositiveIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['added_by', 'book'],
+                name='unique_rating_per_addedby_book'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.added_by} rated {self.book}: {self.value}/5"

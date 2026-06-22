@@ -26,7 +26,6 @@ class ReviewForm(ModelForm):
     class Meta:
         model=Review
         fields=[
-            'rating',
             'text',
         ]
 '''

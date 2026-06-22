@@ -1,11 +1,14 @@
+from django.views import View
 from django.views.generic import (
     ListView, DetailView,
     CreateView, UpdateView,
     DeleteView, 
 )
 from django.urls import reverse_lazy
-from .models import Book, Author, Genre, Review
-from .forms import BookForm, ReviewForm
+from django.shortcuts import get_object_or_404, redirect
+from django.db.models import Avg, Count
+from .models import Book, Author, Genre, Review, Rating
+from .forms import BookForm, ReviewForm, RatingForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 class BookListView(ListView):
@@ -23,7 +26,43 @@ class BookDetailView(DetailView):
     ).prefetch_related(
         'genres',
         'reviews__added_by'
+    ).annotate(
+        average_rating=Avg('ratings__value'),
+        ratings_count=Count('ratings')
     )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_rating=None
+        if self.request.user.is_authenticated:
+            user_rating=Rating.objects.filter(
+                added_by=self.request.user,
+                book=self.object
+            ).first()
+
+            context['rating_form']=RatingForm(
+                instance=user_rating
+            )
+
+        context['user_rating']=user_rating
+
+        return context
+
+class RateBookView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        book = get_object_or_404(Book, pk=pk)
+        form = RatingForm(request.POST)
+
+        if form.is_valid():
+            Rating.objects.update_or_create(
+                added_by=request.user,
+                book=book,
+                defaults={
+                    'value': form.cleaned_data['value']
+                }
+            )
+
+        return redirect('book_detail', pk=book.pk)
 
 class BookCreateView(LoginRequiredMixin, CreateView):
     model=Book

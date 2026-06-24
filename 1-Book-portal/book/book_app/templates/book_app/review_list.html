@@ -19,7 +19,11 @@ Reviews
             </p>
 
             <p>
-                Rating: {{ review.rating }}/5
+                {% if review.rating_value %}
+                    <p>Rating: {{ review.rating_value }}/5</p>
+                {% else %}
+                    <p>Rating: no ratings</p>
+                {% endif %}
             </p>
 
             <p>

@@ -1,45 +1,24 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    {% if object %}
-        Edit review
-    {% else %}
-        Add review
-    {% endif %}
+Review
 {% endblock %}
 
 {% block content %}
-
-    {% if object %}
-        <h2>Edit review for "{{ object.book.title }}"</h2>
-    {% else %}
-        <h2>Add review</h2>
-    {% endif %}
+    <h1>Review for {{ book.title }}</h1>
 
     <form method="post">
         {% csrf_token %}
 
-        {{ form.as_p }}
+        {{ rating_form.as_p }}
 
-        <button type="submit">
-            {% if object %}
-                Save changes
-            {% else %}
-                Publish review
-            {% endif %}
-        </button>
+        {{ review_form.as_p }}
+
+        <button type="submit">Save review and rating</button>
     </form>
-
     <p>
-        {% if object %}
-            <a href="{% url 'book_detail' object.book.pk %}">
-                Cancel
-            </a>
-        {% else %}
-            <a href="{% url 'book_list' %}">
-                Cancel
-            </a>
-        {% endif %}
+        <a href="{% url 'book_list' %}">
+            Cancel
+        </a>
     </p>
-
 {% endblock %}

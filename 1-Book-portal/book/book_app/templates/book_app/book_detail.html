@@ -67,37 +67,6 @@
         {% else %}
             <p>There are no ratings yet.</p>
         {% endif %}
-
-        {% if request.user.is_authenticated %}
-
-            {% if user_rating %}
-                <p>
-                    <strong>Your current rating:</strong>
-                    {{ user_rating.value }}/5
-                </p>
-            {% endif %}
-
-            <form method="post" action="{% url 'book_rate' book.pk %}">
-                {% csrf_token %}
-
-                {{ rating_form.as_p }}
-
-                <button type="submit">
-                    {% if user_rating %}
-                        Update rating
-                    {% else %}
-                        Rate book
-                    {% endif %}
-                </button>
-            </form>
-
-        {% else %}
-            <p>
-                <a href="{% url 'login' %}?next={{ request.path }}">
-                    Log in to rate this book
-                </a>
-            </p>
-        {% endif %}
     </section>
 
     <hr>
@@ -108,16 +77,32 @@
         {% if request.user.is_authenticated %}
             <p>
                 <a href="{% url 'review_create' book.pk %}">
-                    Add review
+                    Add or edit your review and rating
+                </a>
+            </p>
+        {% else %}
+            <p>
+                <a href="{% url 'login' %}?next={{ request.path }}">
+                    Log in to add a review and rating
                 </a>
             </p>
         {% endif %}
-        {% for review in book.reviews.all %}
+        {% for review in reviews %}
             <article>
                 <p>
                     <strong>{{ review.added_by.username }}</strong>
                 </p>
-
+                {% if review.rating_value %}
+                    <p>
+                        <strong>Rating:</strong>
+                        {{ review.rating_value }}/5
+                    </p>
+                {% else %}
+                    <p>
+                        <strong>Rating:</strong>
+                        No rating
+                    </p>
+                {% endif %}
                 <p>
                     {{ review.text|truncatechars:180 }}
                 </p>

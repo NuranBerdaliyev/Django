@@ -4,8 +4,9 @@ from django.views.generic import (
     CreateView, UpdateView,
     DeleteView, 
 )
+from django.db import transaction
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Avg, Count
 from .models import Book, Author, Genre, Review, Rating
 from .forms import BookForm, ReviewForm, RatingForm
@@ -33,36 +34,20 @@ class BookDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user_rating=None
-        if self.request.user.is_authenticated:
-            user_rating=Rating.objects.filter(
-                added_by=self.request.user,
-                book=self.object
-            ).first()
 
-            context['rating_form']=RatingForm(
-                instance=user_rating
-            )
+        ratings_by_user = {
+            rating.added_by_id: rating.value
+            for rating in self.object.ratings.all()
+        }
 
-        context['user_rating']=user_rating
+        reviews = self.object.reviews.all()
+
+        for review in reviews:
+            review.rating_value = ratings_by_user.get(review.added_by_id)
+
+        context['reviews'] = reviews
 
         return context
-
-class RateBookView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        book = get_object_or_404(Book, pk=pk)
-        form = RatingForm(request.POST)
-
-        if form.is_valid():
-            Rating.objects.update_or_create(
-                added_by=request.user,
-                book=book,
-                defaults={
-                    'value': form.cleaned_data['value']
-                }
-            )
-
-        return redirect('book_detail', pk=book.pk)
 
 class BookCreateView(LoginRequiredMixin, CreateView):
     model=Book
@@ -111,47 +96,127 @@ class ReviewListView(ListView):
     context_object_name='reviews'
     queryset=Review.objects.select_related(
         'book', 'added_by'
+    ).prefetch_related(
+        'book__ratings'
     )
+
+    def get_queryset(self):
+        reviews = super().get_queryset()
+
+        for review in reviews:
+            review.rating_value = next(
+                (
+                    rating.value
+                    for rating in review.book.ratings.all()
+                    if rating.added_by_id == review.added_by_id
+                ),
+                None
+            )
+
+        return reviews
 
 class ReviewDetailView(DetailView):
     model=Review
     queryset=Review.objects.select_related(
         'book', 'added_by'
+    ).prefetch_related(
+        'book__ratings'
     )
 
-class ReviewCreateView(LoginRequiredMixin, CreateView):
-    model=Review
-    form_class=ReviewForm
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    def form_valid(self, form):
-        form.instance.added_by=self.request.user
-        form.instance.book_id=self.kwargs['pk']
-        return super().form_valid(form)
+        context['rating'] = self.object.book.ratings.filter(
+            added_by=self.object.added_by
+        ).first()
+
+        return context
+
+class ReviewCreateView(LoginRequiredMixin, View):
+    template_name='book_app/review_form.html'
+
+    def get_book(self):
+        return get_object_or_404(Book, pk=self.kwargs['pk'])
     
-    def get_success_url(self):
-        return reverse_lazy(
-            'book_detail', 
-            kwargs={'pk': self.kwargs['pk']}
+    def get(self, request, pk):
+        book=self.get_book()
+
+        review=Review.objects.filter(
+            added_by=request.user,
+            book=book
+        ).first()
+
+        rating = Rating.objects.filter(
+            added_by=request.user,
+            book=book
+        ).first()
+
+        review_form = ReviewForm(instance=review)
+        rating_form = RatingForm(instance=rating)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'review_form': review_form,
+                'rating_form': rating_form,
+                'book': book,
+            }
         )
 
-class ReviewUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model=Review
-    form_class=ReviewForm
+    def post(self, request, pk):
+        book = self.get_book()
 
-    def test_func(self):
-        review=self.get_object()
-        return review.added_by==self.request.user
-    
-    def get_success_url(self):
-        return reverse_lazy('book_detail', kwargs={'pk': self.object.book.pk})
+        review_form = ReviewForm(request.POST)
+        rating_form = RatingForm(request.POST)
+
+        if review_form.is_valid() and rating_form.is_valid():
+            with transaction.atomic():
+                Review.objects.update_or_create(
+                    added_by=request.user,
+                    book=book,
+                    defaults={
+                        'text': review_form.cleaned_data['text']
+                    }
+                )
+
+                Rating.objects.update_or_create(
+                    added_by=request.user,
+                    book=book,
+                    defaults={
+                        'value': rating_form.cleaned_data['value']
+                    }
+                )
+
+            return redirect('book_detail', pk=book.pk)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'review_form': review_form,
+                'rating_form': rating_form,
+                'book': book,
+            }
+        )
     
     
 class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    model=Review
-    
+    model = Review
+
     def test_func(self):
-        review=self.get_object()
-        return review.added_by==self.request.user
-    
-    def get_success_url(self):
-        return reverse_lazy('book_detail', kwargs={'pk': self.object.book.pk})
+        review = self.get_object()
+        return review.added_by == self.request.user
+
+    def form_valid(self, form):
+        review = self.get_object()
+
+        with transaction.atomic():
+            Rating.objects.filter(
+                added_by=review.added_by,
+                book=review.book
+            ).delete()
+
+            review.delete()
+
+        return redirect('book_detail', pk=review.book.pk)

@@ -23,7 +23,11 @@ Review for {{ review.book.title }}
 
         <p>
             <strong>Rating:</strong>
-            {{ review.rating }}/5
+            {% if rating %}
+                {{ rating.value }}/5
+            {% else %}
+                No ratings
+            {% endif %}
         </p>
 
         <p>
@@ -36,7 +40,7 @@ Review for {{ review.book.title }}
         <p>{{ review.text|linebreaks }}</p>
     </article>
     {% if request.user == review.added_by %}
-        <a href="{% url 'review_update' review.pk %}">
+        <a href="{% url 'review_create' review.book.pk %}">
             Edit review
         </a>
         |

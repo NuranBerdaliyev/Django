@@ -42,9 +42,6 @@ class RatingForm(ModelForm):
         fields=[
             'value',
         ]
-        labels={
-            'value': 'Your rating',
-        }
         widgets={
             'value': Select(
                 choices=[

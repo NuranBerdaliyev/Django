@@ -16,9 +16,49 @@ class BookListView(ListView):
     model=Book
     context_object_name='books'
 
-    queryset=Book.objects.select_related(
-        'author', 'added_by'
-    ).prefetch_related('genres')
+    def get_queryset(self):
+        books = Book.objects.select_related(
+            'author', 'added_by'
+        ).prefetch_related(
+            'genres'
+        ).annotate(
+            average_rating=Avg('ratings__value')
+        )
+
+        query=self.request.GET.get('q')
+        genre_id=self.request.GET.get('genre')
+        ordering=self.request.GET.get('ordering')
+
+        if query:
+            books = books.filter(title__icontains=query)
+
+        if genre_id:
+            books = books.filter(genres__id=genre_id)
+
+        if ordering == 'oldest':
+            books = books.order_by('published_year')
+
+        elif ordering == 'title':
+            books = books.order_by('title')
+
+        elif ordering == 'rating':
+            books = books.order_by('-average_rating')
+
+        else:
+            books = books.order_by('-created_at')
+
+        return books.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['genres'] = Genre.objects.all()
+        context['selected_genre'] = self.request.GET.get('genre', '')
+        context['selected_ordering'] = self.request.GET.get('ordering', '')
+        context['search_query'] = self.request.GET.get('q', '')
+
+        return context
+    
 
 class BookDetailView(DetailView):
     model=Book
@@ -131,74 +171,6 @@ class ReviewDetailView(DetailView):
         ).first()
 
         return context
-
-class ReviewCreateView(LoginRequiredMixin, View):
-    template_name='book_app/review_form.html'
-
-    def get_book(self):
-        return get_object_or_404(Book, pk=self.kwargs['pk'])
-    
-    def get(self, request, pk):
-        book=self.get_book()
-
-        review=Review.objects.filter(
-            added_by=request.user,
-            book=book
-        ).first()
-
-        rating = Rating.objects.filter(
-            added_by=request.user,
-            book=book
-        ).first()
-
-        review_form = ReviewForm(instance=review)
-        rating_form = RatingForm(instance=rating)
-
-        return render(
-            request,
-            self.template_name,
-            {
-                'review_form': review_form,
-                'rating_form': rating_form,
-                'book': book,
-            }
-        )
-
-    def post(self, request, pk):
-        book = self.get_book()
-
-        review_form = ReviewForm(request.POST)
-        rating_form = RatingForm(request.POST)
-
-        if review_form.is_valid() and rating_form.is_valid():
-            with transaction.atomic():
-                Review.objects.update_or_create(
-                    added_by=request.user,
-                    book=book,
-                    defaults={
-                        'text': review_form.cleaned_data['text']
-                    }
-                )
-
-                Rating.objects.update_or_create(
-                    added_by=request.user,
-                    book=book,
-                    defaults={
-                        'value': rating_form.cleaned_data['value']
-                    }
-                )
-
-            return redirect('book_detail', pk=book.pk)
-
-        return render(
-            request,
-            self.template_name,
-            {
-                'review_form': review_form,
-                'rating_form': rating_form,
-                'book': book,
-            }
-        )
     
     
 class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):

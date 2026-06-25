@@ -73,7 +73,7 @@ class Rating(models.Model):
     added_by=models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='ratings'
+        related_name='added_ratings'
     )
     book=models.ForeignKey(
         Book,

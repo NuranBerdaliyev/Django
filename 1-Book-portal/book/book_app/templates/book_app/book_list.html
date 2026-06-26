@@ -14,6 +14,76 @@ Books
         </p>
     {% endif %}
     
+    <form method="get">
+        <p>
+            <label for="id_q">Search by title:</label>
+            <input
+                type="text"
+                name="q"
+                id="id_q"
+                value="{{ search_query }}"
+            >
+        </p>
+
+        <p>
+            <label for="id_genre">Genre:</label>
+
+            <select name="genre" id="id_genre">
+                <option value="">All genres</option>
+
+                {% for genre in genres %}
+                    <option
+                        value="{{ genre.pk }}"
+                        {% if selected_genre == genre.pk|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ genre.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <p>
+            <label for="id_ordering">Sort by:</label>
+
+            <select name="ordering" id="id_ordering">
+                <option value="">Newest added</option>
+
+                <option
+                    value="oldest"
+                    {% if selected_ordering == 'oldest' %}
+                        selected
+                    {% endif %}
+                >
+                    Oldest published
+                </option>
+
+                <option
+                    value="title"
+                    {% if selected_ordering == 'title' %}
+                        selected
+                    {% endif %}
+                >
+                    Title A–Z
+                </option>
+
+                <option
+                    value="rating"
+                    {% if selected_ordering == 'rating' %}
+                        selected
+                    {% endif %}
+                >
+                    Highest rating
+                </option>
+            </select>
+        </p>
+
+        <button type="submit">Apply</button>
+
+        <a href="{% url 'book_list' %}">Reset</a>
+    </form>
+
     {% for book in books %}
         <article>
             <h3>
@@ -50,5 +120,32 @@ Books
     {% empty %}
         <p>There are no books yet.</p>
     {% endfor %}
+    {% if is_paginated %}
+        <nav>
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if query_params %}&{{ query_params }}{% endif %}">
+                    First
+                </a>
+
+                <a href="?page={{ page_obj.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Previous
+                </a>
+            {% endif %}
+
+            <span>
+                Page: {{ page_obj.number }}/{{ paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Next
+                </a>
+
+                <a href="?page={{ paginator.num_pages }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Last
+                </a>
+            {% endif %}
+        </nav>
+    {% endif %}
 
 {% endblock %}

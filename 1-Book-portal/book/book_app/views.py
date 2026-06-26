@@ -15,7 +15,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 class BookListView(ListView):
     model=Book
     context_object_name='books'
-
+    paginate_by=10
     def get_queryset(self):
         books = Book.objects.select_related(
             'author', 'added_by'
@@ -28,6 +28,7 @@ class BookListView(ListView):
         query=self.request.GET.get('q')
         genre_id=self.request.GET.get('genre')
         ordering=self.request.GET.get('ordering')
+        
 
         if query:
             books = books.filter(title__icontains=query)
@@ -56,6 +57,10 @@ class BookListView(ListView):
         context['selected_genre'] = self.request.GET.get('genre', '')
         context['selected_ordering'] = self.request.GET.get('ordering', '')
         context['search_query'] = self.request.GET.get('q', '')
+        
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        context['query_params'] = params.urlencode()
 
         return context
     

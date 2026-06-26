@@ -154,7 +154,7 @@ class ObjectPermissionsTests(TestCase):
         login_url = reverse('login')
         self.assertRedirects(response, f'{login_url}?next={url}')
 
-    def test_guest_is_redirected_to_login_when_trying_to_edit_review(self):
+    def test_guest_is_redirected_to_login_when_trying_to_modify_review(self):
         url = reverse('review_create', kwargs={'pk': self.book.pk})
         response = self.client.get(url)
         login_url = reverse('login')

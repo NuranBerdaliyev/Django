@@ -57,7 +57,7 @@ class BookListView(ListView):
         context['selected_genre'] = self.request.GET.get('genre', '')
         context['selected_ordering'] = self.request.GET.get('ordering', '')
         context['search_query'] = self.request.GET.get('q', '')
-        
+
         params = self.request.GET.copy()
         params.pop('page', None)
         context['query_params'] = params.urlencode()
@@ -177,6 +177,74 @@ class ReviewDetailView(DetailView):
 
         return context
     
+    
+class ReviewCreateView(LoginRequiredMixin, View):
+    template_name = 'book_app/review_form.html'
+
+    def get_book(self):
+        return get_object_or_404(Book, pk=self.kwargs['pk'])
+
+    def get(self, request, pk):
+        book = self.get_book()
+
+        review = Review.objects.filter(
+            added_by=request.user,
+            book=book
+        ).first()
+
+        rating = Rating.objects.filter(
+            added_by=request.user,
+            book=book
+        ).first()
+
+        review_form = ReviewForm(instance=review)
+        rating_form = RatingForm(instance=rating)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'review_form': review_form,
+                'rating_form': rating_form,
+                'book': book,
+            }
+        )
+
+    def post(self, request, pk):
+        book = self.get_book()
+
+        review_form = ReviewForm(request.POST)
+        rating_form = RatingForm(request.POST)
+
+        if review_form.is_valid() and rating_form.is_valid():
+            with transaction.atomic():
+                Review.objects.update_or_create(
+                    added_by=request.user,
+                    book=book,
+                    defaults={
+                        'text': review_form.cleaned_data['text']
+                    }
+                )
+
+                Rating.objects.update_or_create(
+                    added_by=request.user,
+                    book=book,
+                    defaults={
+                        'value': rating_form.cleaned_data['value']
+                    }
+                )
+
+            return redirect('book_detail', pk=book.pk)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'review_form': review_form,
+                'rating_form': rating_form,
+                'book': book,
+            }
+        )
     
 class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Review

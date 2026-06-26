@@ -103,6 +103,15 @@ Books
                 <p>Published: {{ book.published_year }}</p>
             {% endif %}
 
+            {% if book.average_rating %}
+                <p>
+                    Average rating:
+                    {{ book.average_rating|floatformat:1 }}/5
+                </p>
+            {% else %}
+                <p>Average rating: no ratings yet</p>
+            {% endif %}
+
             {% if book.genres.all %}
                 <p>
                     Genres:

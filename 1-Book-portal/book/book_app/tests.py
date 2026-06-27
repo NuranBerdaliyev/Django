@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from .models import Author, Book, Review, Rating
+from .models import Author, Book, Review, Rating, ReadingList
 from django.urls import reverse
 User=get_user_model()
 
@@ -86,6 +86,48 @@ class RatingModelTest(TestCase):
                 book=self.book,
                 value=4
             )
+
+class ReadingListModelTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='reading_user',
+            password='strong-password-123'
+        )
+
+        self.author = Author.objects.create(
+            fullname='Reading List Author'
+        )
+
+        self.book = Book.objects.create(
+            added_by=self.user,
+            title='Reading List Book',
+            author=self.author
+        )
+
+    def test_user_cannot_add_same_book_to_reading_list_twice(self):
+        ReadingList.objects.create(
+            user=self.user,
+            book=self.book,
+            status=ReadingList.Status.WANT_TO_READ
+        )
+
+        with self.assertRaises(IntegrityError):
+            ReadingList.objects.create(
+                user=self.user,
+                book=self.book,
+                status=ReadingList.Status.READ
+            )
+
+    def test_reading_list_default_status_is_want_to_read(self):
+        entry = ReadingList.objects.create(
+            user=self.user,
+            book=self.book
+        )
+
+        self.assertEqual(
+            entry.status,
+            ReadingList.Status.WANT_TO_READ
+        )
 
 class ObjectPermissionsTests(TestCase):
     def setUp(self):
@@ -210,7 +252,6 @@ class ObjectPermissionsTests(TestCase):
 
     def test_other_user_cannot_update_someone_elses_book_with_post(self):
         self.client.force_login(self.user_b)
-
         url = reverse('book_update', kwargs={'pk': self.book.pk})
         response = self.client.post(url, {
             'title': 'Hacked title',
@@ -218,9 +259,7 @@ class ObjectPermissionsTests(TestCase):
             'published_year': 2026,
             'author': self.author.pk,
         })
-
         self.assertEqual(response.status_code, 403)
-
         self.book.refresh_from_db()
         self.assertEqual(self.book.title, '1984')
 
@@ -241,22 +280,17 @@ class ObjectPermissionsTests(TestCase):
 
     def test_owner_can_open_review_and_rating_form(self):
         self.client.force_login(self.user_a)
-
         url = reverse('review_create', kwargs={'pk': self.book.pk})
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, 200)
     
     def test_owner_can_update_review_and_rating_together(self):
         self.client.force_login(self.user_a)
-
         url = reverse('review_create', kwargs={'pk': self.book.pk})
-
         response = self.client.post(url, {
             'text': 'Updated review text.',
             'value': 4,
         })
-
         self.assertRedirects(
             response,
             reverse('book_detail', kwargs={'pk': self.book.pk})
@@ -270,25 +304,19 @@ class ObjectPermissionsTests(TestCase):
     
     def test_other_user_creates_own_review_and_rating_without_changing_owner_data(self):
         self.client.force_login(self.user_b)
-
         url = reverse('review_create', kwargs={'pk': self.book.pk})
-
         response = self.client.post(url, {
             'text': 'Review from user B.',
             'value': 3,
         })
-
         self.assertRedirects(
             response,
             reverse('book_detail', kwargs={'pk': self.book.pk})
         )
-
         self.review.refresh_from_db()
         self.rating.refresh_from_db()
-
         self.assertEqual(self.review.text, 'A very strong review text.')
         self.assertEqual(self.rating.value, 5)
-
         user_b_review = Review.objects.get(
             added_by=self.user_b,
             book=self.book
@@ -297,25 +325,20 @@ class ObjectPermissionsTests(TestCase):
             added_by=self.user_b,
             book=self.book
         )
-
         self.assertEqual(user_b_review.text, 'Review from user B.')
         self.assertEqual(user_b_rating.value, 3)
 
     def test_owner_deleting_review_also_deletes_rating(self):
         self.client.force_login(self.user_a)
-
         url = reverse('review_delete', kwargs={'pk': self.review.pk})
         response = self.client.post(url)
-
         self.assertRedirects(
             response,
             reverse('book_detail', kwargs={'pk': self.book.pk})
         )
-
         self.assertFalse(
             Review.objects.filter(pk=self.review.pk).exists()
         )
-
         self.assertFalse(
             Rating.objects.filter(
                 added_by=self.user_a,

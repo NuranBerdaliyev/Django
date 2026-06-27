@@ -8,8 +8,8 @@ from django.db import transaction
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Avg, Count
-from .models import Book, Author, Genre, Review, Rating
-from .forms import BookForm, ReviewForm, RatingForm
+from .models import Book, Author, Genre, Review, Rating, ReadingList
+from .forms import BookForm, ReviewForm, RatingForm, ReadingListForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 class BookListView(ListView):
@@ -265,3 +265,83 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             review.delete()
 
         return redirect('book_detail', pk=review.book.pk)
+    
+class ReadingListUpdateView(LoginRequiredMixin, View):
+    template_name = 'book_app/reading_list_form.html'
+
+    def get_book(self):
+        return get_object_or_404(
+            Book,
+            pk=self.kwargs['pk']
+        )
+
+    def get(self, request, pk):
+        book = self.get_book()
+
+        entry = ReadingList.objects.filter(
+            user=request.user,
+            book=book
+        ).first()
+
+        form = ReadingListForm(instance=entry)
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'form': form,
+                'book': book,
+            }
+        )
+
+    def post(self, request, pk):
+        book = self.get_book()
+
+        entry = ReadingList.objects.filter(
+            user=request.user,
+            book=book
+        ).first()
+
+        form = ReadingListForm(
+            request.POST,
+            instance=entry
+        )
+
+        if form.is_valid():
+            reading_list_entry = form.save(commit=False)
+            reading_list_entry.user = request.user
+            reading_list_entry.book = book
+            reading_list_entry.save()
+
+            return redirect(
+                'book_detail',
+                pk=book.pk
+            )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                'form': form,
+                'book': book,
+            }
+        )
+    
+class ReadingListAddView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        book = get_object_or_404(Book, pk=pk)
+
+        ReadingList.objects.get_or_create(
+            user=request.user,
+            book=book,
+            defaults={
+                'status': ReadingList.Status.WANT_TO_READ,
+            }
+        )
+
+        next_url = request.POST.get('next')
+
+        if next_url:
+            return redirect(next_url)
+
+        return redirect('book_detail', pk=book.pk)

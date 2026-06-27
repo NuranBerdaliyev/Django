@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Reading status
+{% endblock %}
+
+{% block content %}
+
+    <h2>Reading status for "{{ book.title }}"</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            Save status
+        </button>
+    </form>
+
+    <p>
+        <a href="{% url 'book_detail' book.pk %}">
+            Cancel
+        </a>
+    </p>
+
+{% endblock %}

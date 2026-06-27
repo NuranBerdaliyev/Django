@@ -1,5 +1,5 @@
 from django.forms import ModelForm, Select
-from .models import Book, Review, Rating
+from .models import Book, Review, Rating, ReadingList
 
 class BookForm(ModelForm):
     class Meta:
@@ -43,13 +43,15 @@ class RatingForm(ModelForm):
             'value',
         ]
         widgets={
-            'value': Select(
-                choices=[
-                    (1, '1/5'),
-                    (2, '2/5'),
-                    (3, '3/5'),
-                    (4, '4/5'),
-                    (5, '5/5'),
-                ]
-            )
+            'value': Select,
+        }
+    
+class ReadingListForm(ModelForm):
+    class Meta:
+        model = ReadingList
+        fields = [
+            'status',
+        ]
+        widgets = {
+            'status':Select,
         }

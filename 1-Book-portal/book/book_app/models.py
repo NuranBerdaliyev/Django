@@ -70,6 +70,12 @@ class Review(models.Model):
         return f"{self.added_by} - review for {self.book}"
 
 class Rating(models.Model):
+    class Value(models.IntegerChoices):
+        ONE=1, '1/5'
+        TWO=2, '2/5'
+        THREE=3, '3/5'
+        FOUR=4, '4/5'
+        FIVE=5, '5/5'
     added_by=models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -81,6 +87,7 @@ class Rating(models.Model):
         related_name='ratings'
     )
     value=models.PositiveIntegerField(
+        choices=Value.choices,
         validators=[
             MinValueValidator(1),
             MaxValueValidator(5),
@@ -99,3 +106,42 @@ class Rating(models.Model):
     
     def __str__(self):
         return f"{self.added_by} rated {self.book}: {self.value}/5"
+
+
+class ReadingList(models.Model):
+    class Status(models.TextChoices):
+        WANT_TO_READ = 'want_to_read', 'Want to read'
+        READING = 'reading', 'Reading'
+        READ = 'read', 'Read'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reading_list_entries'
+    )
+
+    book = models.ForeignKey(
+        Book,
+        on_delete=models.CASCADE,
+        related_name='reading_list_entries'
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.WANT_TO_READ
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'book'],
+                name='unique_book_in_user_reading_list'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} — {self.book} ({self.get_status_display()})'

@@ -68,7 +68,31 @@
             <p>There are no ratings yet.</p>
         {% endif %}
     </section>
+    <hr>
+    <section>
+        {% if request.user.is_authenticated %}
+            <form method="post" action="{% url 'reading_list_add' book.pk %}">
+                {% csrf_token %}
 
+                <input
+                    type="hidden"
+                    name="next"
+                    value="{{ request.path }}"
+                >
+
+                <button type="submit">
+                    Add to reading list
+                </button>
+            </form>
+        {% else %}
+            <p>
+                <a href="{% url 'login' %}?next={{ request.path }}">
+                    Log in to add this book to your reading list
+                </a>
+            </p>
+        {% endif %}
+
+    </section>
     <hr>
 
     <section>

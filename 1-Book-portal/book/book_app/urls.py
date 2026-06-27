@@ -2,11 +2,12 @@ from django.urls import path
 from .views import (
     BookDetailView, BookListView,
     BookCreateView, BookUpdateView, 
-    BookDeleteView,
-    ReviewDetailView, ReviewListView,
-    ReviewCreateView, ReviewDeleteView,
-    AuthorDetailView, AuthorListView,
-    GenreListView, GenreDetailView,
+    BookDeleteView,ReviewDetailView, 
+    ReviewListView, ReviewCreateView, 
+    ReviewDeleteView, AuthorDetailView, 
+    AuthorListView, GenreListView, 
+    GenreDetailView, ReadingListUpdateView,
+    ReadingListAddView,
 )
 
 urlpatterns=[
@@ -26,4 +27,7 @@ urlpatterns=[
 
     path('genres/', GenreListView.as_view(), name='genre_list'),
     path('genres/<int:pk>/', GenreDetailView.as_view(), name='genre_detail'),
+
+    path('books/<int:pk>/reading-list/', ReadingListUpdateView.as_view(), name='reading_list_update'),
+    path('books/<int:pk>/reading-list/add/', ReadingListAddView.as_view(), name='reading_list_add'),
 ]

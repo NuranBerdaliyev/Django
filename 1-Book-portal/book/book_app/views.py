@@ -31,6 +31,12 @@ class BookListView(ListView):
                         user=self.request.user,
                         book=OuterRef('pk')
                     )
+                ), 
+                is_in_reading_list=Exists(
+                    ReadingList.objects.filter(
+                        user=self.request.user,
+                        book=OuterRef('pk')
+                    )
                 )
             )
         query=self.request.GET.get('q')

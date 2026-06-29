@@ -345,3 +345,27 @@ class ObjectPermissionsTests(TestCase):
                 book=self.book
             ).exists()
         )
+    
+    def test_guest_is_redirected_to_login_when_trying_to_add_book_to_reading_list(self):
+        url = reverse('reading_list_add', kwargs={'pk': self.book.pk})
+        response = self.client.post(url)
+        login_url = reverse('login')
+        self.assertRedirects(response, f'{login_url}?next={url}')
+
+    def test_user_can_add_book_to_reading_list(self):
+        self.client.force_login(self.user_a)
+        url = reverse('reading_list_add', kwargs={'pk': self.book.pk})
+        response = self.client.post(url, {'next': reverse('book_detail', kwargs={'pk': self.book.pk})})
+        self.assertRedirects(response, reverse('book_detail', kwargs={'pk': self.book.pk}))
+        entry = ReadingList.objects.get(user=self.user_a, book=self.book)
+        self.assertEqual(entry.status, ReadingList.Status.WANT_TO_READ)
+
+    def test_user_can_change_reading_list_status(self):
+        ReadingList.objects.create(user=self.user_a, book=self.book, status=ReadingList.Status.WANT_TO_READ)
+        self.client.force_login(self.user_a)
+        url = reverse('reading_list_update', kwargs={'pk': self.book.pk})
+        response = self.client.post(url, {'status': ReadingList.Status.READ})
+        self.assertRedirects(response, reverse('book_detail', kwargs={'pk': self.book.pk}))
+        entry = ReadingList.objects.get(user=self.user_a, book=self.book)
+        self.assertEqual(entry.status, ReadingList.Status.READ)
+        self.assertEqual(ReadingList.objects.filter(user=self.user_a, book=self.book).count(), 1)

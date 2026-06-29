@@ -70,28 +70,103 @@
     </section>
     <hr>
     <section>
+    <h2>Reading List</h2>
+
         {% if request.user.is_authenticated %}
-            <form method="post" action="{% url 'reading_list_add' book.pk %}">
-                {% csrf_token %}
+            {% if reading_list_entry %}
+                <p>
+                    Your status:
+                    <strong>
+                        {{ reading_list_entry.get_status_display }}
+                    </strong>
+                </p>
 
-                <input
-                    type="hidden"
-                    name="next"
-                    value="{{ request.path }}"
+                <p>
+                    <a href="{% url 'reading_list_update' book.pk %}">
+                        Change status
+                    </a>
+                </p>
+
+                <form method="post" action="{% url 'reading_list_delete' book.pk %}">
+                    {% csrf_token %}
+
+                    <input type="hidden" 
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Remove from reading list
+                    </button>
+                </form>
+            {% else %}
+                <form
+                    method="post"
+                    action="{% url 'reading_list_add' book.pk %}"
                 >
+                    {% csrf_token %}
 
-                <button type="submit">
-                    Add to reading list
-                </button>
-            </form>
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Add to reading list
+                    </button>
+                </form>
+            {% endif %}
         {% else %}
             <p>
                 <a href="{% url 'login' %}?next={{ request.path }}">
-                    Log in to add this book to your reading list
+                    Log in to manage your reading list
                 </a>
             </p>
         {% endif %}
+    </section>
 
+    <hr>
+    <section>
+        <h2>Favorites</h2>
+
+        {% if request.user.is_authenticated %}
+            {% if is_favorite %}
+                <form
+                    method="post"
+                    action="{% url 'favorite_delete' book.pk %}"
+                >
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Remove from favorites
+                    </button>
+                </form>
+            {% else %}
+                <form
+                    method="post"
+                    action="{% url 'favorite_add' book.pk %}"
+                >
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Add to favorites
+                    </button>
+                </form>
+            {% endif %}
+        {% endif %}
     </section>
     <hr>
 

@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from .models import Author, Book, Review, Rating, ReadingList
+from .models import Author, Book, Review, Rating, ReadingList, Favorite
 from django.urls import reverse
 User=get_user_model()
 
@@ -128,7 +128,34 @@ class ReadingListModelTest(TestCase):
             entry.status,
             ReadingList.Status.WANT_TO_READ
         )
+class FavoriteModelTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='favorite_user',
+            password='strong-password-123'
+        )
 
+        self.author = Author.objects.create(
+            fullname='Favorite Author'
+        )
+
+        self.book = Book.objects.create(
+            added_by=self.user,
+            title='Favorite Book',
+            author=self.author
+        )
+
+    def test_user_cannot_add_same_book_to_favorites_twice(self):
+        Favorite.objects.create(
+            user=self.user,
+            book=self.book
+        )
+
+        with self.assertRaises(IntegrityError):
+            Favorite.objects.create(
+                user=self.user,
+                book=self.book
+            )
 class ObjectPermissionsTests(TestCase):
     def setUp(self):
 
@@ -369,3 +396,97 @@ class ObjectPermissionsTests(TestCase):
         entry = ReadingList.objects.get(user=self.user_a, book=self.book)
         self.assertEqual(entry.status, ReadingList.Status.READ)
         self.assertEqual(ReadingList.objects.filter(user=self.user_a, book=self.book).count(), 1)
+
+    def test_user_can_remove_book_from_reading_list(self):
+        ReadingList.objects.create(user=self.user_a, book=self.book, status=ReadingList.Status.READING)
+        self.client.force_login(self.user_a)
+        url = reverse(
+            'reading_list_delete',
+            kwargs={'pk': self.book.pk}
+        )
+        response = self.client.post(url)
+        self.assertRedirects(
+            response,
+            reverse('my_reading_list')
+        )
+        self.assertFalse(
+            ReadingList.objects.filter(
+                user=self.user_a,
+                book=self.book
+            ).exists()
+        )
+
+
+    def test_user_cannot_see_another_users_reading_list_entries(self):
+        ReadingList.objects.create(
+            user=self.user_a,
+            book=self.book,
+            status=ReadingList.Status.READ
+        )
+
+        self.client.force_login(self.user_b)
+
+        response = self.client.get(
+            reverse('my_reading_list')
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertNotContains(
+            response,
+            self.book.title
+        )
+
+
+    def test_user_can_add_book_to_favorites(self):
+        self.client.force_login(self.user_a)
+
+        url = reverse(
+            'favorite_add',
+            kwargs={'pk': self.book.pk}
+        )
+
+        response = self.client.post(url)
+
+        self.assertRedirects(
+            response,
+            reverse(
+                'book_detail',
+                kwargs={'pk': self.book.pk}
+            )
+        )
+
+        self.assertTrue(
+            Favorite.objects.filter(
+                user=self.user_a,
+                book=self.book
+            ).exists()
+        )
+
+
+    def test_user_can_remove_book_from_favorites(self):
+        Favorite.objects.create(
+            user=self.user_a,
+            book=self.book
+        )
+
+        self.client.force_login(self.user_a)
+
+        url = reverse(
+            'favorite_delete',
+            kwargs={'pk': self.book.pk}
+        )
+
+        response = self.client.post(url)
+
+        self.assertRedirects(
+            response,
+            reverse('favorite_list')
+        )
+
+        self.assertFalse(
+            Favorite.objects.filter(
+                user=self.user_a,
+                book=self.book
+            ).exists()
+        )

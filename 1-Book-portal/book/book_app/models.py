@@ -117,13 +117,13 @@ class ReadingList(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='reading_list_entries'
+        related_name='added_reading_list'
     )
 
     book = models.ForeignKey(
         Book,
         on_delete=models.CASCADE,
-        related_name='reading_list_entries'
+        related_name='reading_list'
     )
 
     status = models.CharField(
@@ -145,3 +145,30 @@ class ReadingList(models.Model):
 
     def __str__(self):
         return f'{self.user} — {self.book} ({self.get_status_display()})'
+    
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='added_favorites'
+    )
+
+    book = models.ForeignKey(
+        Book,
+        on_delete=models.CASCADE,
+        related_name='favorites'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'book'],
+                name='unique_book_in_user_favorites'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} — favorite: {self.book}'

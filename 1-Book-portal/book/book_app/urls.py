@@ -7,7 +7,9 @@ from .views import (
     ReviewDeleteView, AuthorDetailView, 
     AuthorListView, GenreListView, 
     GenreDetailView, ReadingListUpdateView,
-    ReadingListAddView,
+    ReadingListAddView, MyReadingListView,
+    ReadingListDeleteView, FavoriteAddView,
+    FavoriteDeleteView, FavoriteListView,
 )
 
 urlpatterns=[
@@ -30,4 +32,12 @@ urlpatterns=[
 
     path('books/<int:pk>/reading-list/', ReadingListUpdateView.as_view(), name='reading_list_update'),
     path('books/<int:pk>/reading-list/add/', ReadingListAddView.as_view(), name='reading_list_add'),
+    path('books/<int:pk>/reading-list/delete/', ReadingListDeleteView.as_view(), name='reading_list_delete'),
+
+    path('books/<int:pk>/favorites/add/', FavoriteAddView.as_view(), name='favorite_add'),
+    path('books/<int:pk>/favorites/delete/', FavoriteDeleteView.as_view(), name='favorite_delete'),
+    path('favorites/', FavoriteListView.as_view(), name='favorite_list'),
+
+    path('my-reading-list/', MyReadingListView.as_view(), name='my_reading_list'),
+
 ]

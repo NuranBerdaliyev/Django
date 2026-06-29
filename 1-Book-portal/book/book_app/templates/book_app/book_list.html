@@ -129,6 +129,43 @@ Books
                     </button>
                 </form>
             {% endif %}
+            {% if request.user.is_authenticated %}
+                {% if book.is_favorite %}
+                    <form
+                        method="post"
+                        action="{% url 'favorite_delete' book.pk %}"
+                    >
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+
+                        <button type="submit">
+                            Remove from favorites
+                        </button>
+                    </form>
+                {% else %}
+                    <form
+                        method="post"
+                        action="{% url 'favorite_add' book.pk %}"
+                    >
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+
+                        <button type="submit">
+                            Add to favorites
+                        </button>
+                    </form>
+                {% endif %}
+            {% endif %}
             {% if book.genres.all %}
                 <p>
                     Genres:

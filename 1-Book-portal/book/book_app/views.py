@@ -7,8 +7,8 @@ from django.views.generic import (
 from django.db import transaction
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect, render
-from django.db.models import Avg, Count
-from .models import Book, Author, Genre, Review, Rating, ReadingList
+from django.db.models import Avg, Count, OuterRef, Exists
+from .models import Book, Author, Genre, Review, Rating, ReadingList, Favorite
 from .forms import BookForm, ReviewForm, RatingForm, ReadingListForm
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
@@ -24,7 +24,15 @@ class BookListView(ListView):
         ).annotate(
             average_rating=Avg('ratings__value')
         )
-
+        if self.request.user.is_authenticated:
+            books = books.annotate(
+                is_favorite=Exists(
+                    Favorite.objects.filter(
+                        user=self.request.user,
+                        book=OuterRef('pk')
+                    )
+                )
+            )
         query=self.request.GET.get('q')
         genre_id=self.request.GET.get('genre')
         ordering=self.request.GET.get('ordering')
@@ -91,6 +99,16 @@ class BookDetailView(DetailView):
             review.rating_value = ratings_by_user.get(review.added_by_id)
 
         context['reviews'] = reviews
+        if self.request.user.is_authenticated:
+            context['reading_list_entry'] = ReadingList.objects.filter(
+                user=self.request.user,
+                book=self.object
+            ).first()
+
+            context['is_favorite'] = Favorite.objects.filter(
+                user=self.request.user,
+                book=self.object
+            ).exists()
 
         return context
 
@@ -345,3 +363,111 @@ class ReadingListAddView(LoginRequiredMixin, View):
             return redirect(next_url)
 
         return redirect('book_detail', pk=book.pk)
+    
+class MyReadingListView(LoginRequiredMixin, ListView):
+    model = ReadingList
+    template_name = 'book_app/my_reading_list.html'
+    context_object_name = 'entries'
+    paginate_by = 10
+
+    def get_queryset(self):
+        entries = ReadingList.objects.filter(
+            user=self.request.user
+        ).select_related(
+            'book__author'
+        ).prefetch_related(
+            'book__genres'
+        ).order_by(
+            '-updated_at'
+        )
+
+        status = self.request.GET.get('status')
+
+        valid_statuses = {
+            value
+            for value, label in ReadingList.Status.choices
+        }
+
+        if status in valid_statuses:
+            entries = entries.filter(status=status)
+
+        return entries
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['statuses'] = ReadingList.Status.choices
+        context['selected_status'] = self.request.GET.get('status', '')
+
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        context['query_params'] = params.urlencode()
+
+        return context
+
+class ReadingListDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        book = get_object_or_404(Book, pk=pk)
+
+        ReadingList.objects.filter(
+            user=request.user,
+            book=book
+        ).delete()
+
+        next_url = request.POST.get('next')
+
+        if next_url:
+            return redirect(next_url)
+
+        return redirect('my_reading_list')
+    
+class FavoriteAddView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        book = get_object_or_404(Book, pk=pk)
+
+        Favorite.objects.get_or_create(
+            user=request.user,
+            book=book
+        )
+
+        next_url = request.POST.get('next')
+
+        if next_url:
+            return redirect(next_url)
+
+        return redirect('book_detail', pk=book.pk)
+
+
+class FavoriteDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        book = get_object_or_404(Book, pk=pk)
+
+        Favorite.objects.filter(
+            user=request.user,
+            book=book
+        ).delete()
+
+        next_url = request.POST.get('next')
+
+        if next_url:
+            return redirect(next_url)
+
+        return redirect('favorite_list')
+
+
+class FavoriteListView(LoginRequiredMixin, ListView):
+    model = Favorite
+    template_name = 'book_app/favorite_list.html'
+    context_object_name = 'favorites'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Favorite.objects.filter(
+            user=self.request.user
+        ).select_related(
+            'book__author'
+        ).prefetch_related(
+            'book__genres'
+        ).order_by(
+            '-created_at'
+        )

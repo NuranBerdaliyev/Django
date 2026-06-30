@@ -1,3 +1,4 @@
+#book_api/urls.py
 """
 URL configuration for book project.
 
@@ -19,6 +20,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('book_app.urls')),
-    path('users/', include('users.urls')),
+    path('api/', include('book_app.urls')),
 ]

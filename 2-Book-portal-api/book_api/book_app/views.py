@@ -1,18 +1,41 @@
 from django.db.models import Avg, Count, Prefetch
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from .models import Author, Book, Genre, Review
 from .serializers import (
-    AuthorListSerializer,
     AuthorDetailSerializer,
+    AuthorListSerializer,
     BookDetailSerializer,
     BookListSerializer,
-    GenreListSerializer,
     GenreDetailSerializer,
+    GenreListSerializer,
     ReviewSerializer,
 )
+
+
 class AuthorListAPIView(ListAPIView):
     queryset = Author.objects.all()
     serializer_class = AuthorListSerializer
+
+    filter_backends = [
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    search_fields = [
+        'fullname',
+        'biography',
+    ]
+
+    ordering_fields = [
+        'fullname',
+    ]
+
+    ordering = [
+        'fullname',
+    ]
+
 
 class AuthorDetailAPIView(RetrieveAPIView):
     serializer_class = AuthorDetailSerializer
@@ -21,7 +44,8 @@ class AuthorDetailAPIView(RetrieveAPIView):
         books_queryset = (
             Book.objects.select_related(
                 'author',
-            ).prefetch_related(
+            )
+            .prefetch_related(
                 'genres',
             )
             .annotate(
@@ -40,9 +64,28 @@ class AuthorDetailAPIView(RetrieveAPIView):
             ),
         )
 
+
 class GenreListAPIView(ListAPIView):
     queryset = Genre.objects.all()
     serializer_class = GenreListSerializer
+
+    filter_backends = [
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    search_fields = [
+        'name',
+    ]
+
+    ordering_fields = [
+        'name',
+    ]
+
+    ordering = [
+        'name',
+    ]
+
 
 class GenreDetailAPIView(RetrieveAPIView):
     serializer_class = GenreDetailSerializer
@@ -71,8 +114,39 @@ class GenreDetailAPIView(RetrieveAPIView):
             ),
         )
 
+
 class BookListAPIView(ListAPIView):
     serializer_class = BookListSerializer
+
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    filterset_fields = [
+        'author',
+        'genres',
+        'published_year',
+    ]
+
+    search_fields = [
+        'title',
+        'description',
+        'author__fullname',
+    ]
+
+    ordering_fields = [
+        'title',
+        'published_year',
+        'created_at',
+        'average_rating',
+        'ratings_count',
+    ]
+
+    ordering = [
+        '-created_at',
+    ]
 
     def get_queryset(self):
         return (
@@ -85,9 +159,6 @@ class BookListAPIView(ListAPIView):
             .annotate(
                 average_rating=Avg('ratings__value'),
                 ratings_count=Count('ratings'),
-            )
-            .order_by(
-                '-created_at',
             )
         )
 
@@ -122,12 +193,39 @@ class BookDetailAPIView(RetrieveAPIView):
 class ReviewListAPIView(ListAPIView):
     serializer_class = ReviewSerializer
 
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    filterset_fields = {
+        'book': [
+            'exact',
+        ],
+        'added_by__username': [
+            'exact',
+        ],
+    }
+
+    search_fields = [
+        'text',
+        'book__title',
+        'added_by__username',
+    ]
+
+    ordering_fields = [
+        'created_at',
+    ]
+
+    ordering = [
+        '-created_at',
+    ]
+
     def get_queryset(self):
         return Review.objects.select_related(
             'book',
             'added_by',
-        ).order_by(
-            '-created_at',
         )
 
 

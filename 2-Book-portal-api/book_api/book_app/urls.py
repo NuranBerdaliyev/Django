@@ -7,6 +7,8 @@ from .views import (
     BookListAPIView,
     GenreDetailAPIView,
     GenreListAPIView,
+    ReviewListAPIView,
+    ReviewDetailAPIView,
 )
 
 urlpatterns = [
@@ -18,4 +20,7 @@ urlpatterns = [
 
     path('books/', BookListAPIView.as_view(), name='api_book_list'),
     path('books/<int:pk>/', BookDetailAPIView.as_view(), name='api_book_detail'),
+
+    path('reviews/', ReviewListAPIView.as_view(), name='api_reviews_list'),
+    path('reviews/<int:pk>/', ReviewDetailAPIView.as_view(), name='api_reviews_detail'),
 ]

@@ -1,6 +1,4 @@
 from django.db.models import Avg, Count, Prefetch
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from .models import Author, Book, Genre, Review
 from .serializers import (
@@ -17,11 +15,6 @@ from .serializers import (
 class AuthorListAPIView(ListAPIView):
     queryset = Author.objects.all()
     serializer_class = AuthorListSerializer
-
-    filter_backends = [
-        SearchFilter,
-        OrderingFilter,
-    ]
 
     search_fields = [
         'fullname',
@@ -69,11 +62,6 @@ class GenreListAPIView(ListAPIView):
     queryset = Genre.objects.all()
     serializer_class = GenreListSerializer
 
-    filter_backends = [
-        SearchFilter,
-        OrderingFilter,
-    ]
-
     search_fields = [
         'name',
     ]
@@ -117,12 +105,6 @@ class GenreDetailAPIView(RetrieveAPIView):
 
 class BookListAPIView(ListAPIView):
     serializer_class = BookListSerializer
-
-    filter_backends = [
-        DjangoFilterBackend,
-        SearchFilter,
-        OrderingFilter,
-    ]
 
     filterset_fields = [
         'author',
@@ -192,12 +174,6 @@ class BookDetailAPIView(RetrieveAPIView):
 
 class ReviewListAPIView(ListAPIView):
     serializer_class = ReviewSerializer
-
-    filter_backends = [
-        DjangoFilterBackend,
-        SearchFilter,
-        OrderingFilter,
-    ]
 
     filterset_fields = {
         'book': [

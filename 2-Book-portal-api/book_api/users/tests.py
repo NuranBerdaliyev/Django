@@ -153,3 +153,299 @@ class AuthenticationAPITestCase(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+class AuthorAndGenreAdminAPITestCase(APITestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            username='admin_user',
+            password='testpassword123',
+            email='admin@example.com',
+        )
+
+        self.regular_user = User.objects.create_user(
+            username='regular_user',
+            password='testpassword123',
+        )
+
+        self.author = Author.objects.create(
+            fullname='Isaac Asimov',
+            biography='American science-fiction writer.',
+        )
+
+        self.genre = Genre.objects.create(
+            name='Science Fiction',
+        )
+
+    def test_guest_can_read_authors_and_genres(self):
+        authors_response = self.client.get(
+            reverse('api_author_list_create')
+        )
+
+        genres_response = self.client.get(
+            reverse('api_genre_list_create')
+        )
+
+        self.assertEqual(
+            authors_response.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            genres_response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_regular_user_cannot_create_author(self):
+        self.client.force_authenticate(user=self.regular_user)
+
+        response = self.client.post(
+            reverse('api_author_list_create'),
+            {
+                'fullname': 'Ray Bradbury',
+                'biography': 'American writer.',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_regular_user_cannot_update_author(self):
+        self.client.force_authenticate(user=self.regular_user)
+
+        response = self.client.patch(
+            reverse(
+                'api_author_detail_update_destroy',
+                kwargs={'pk': self.author.pk},
+            ),
+            {
+                'fullname': 'Changed Name',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.author.refresh_from_db()
+
+        self.assertEqual(
+            self.author.fullname,
+            'Isaac Asimov',
+        )
+
+    def test_regular_user_cannot_delete_author(self):
+        self.client.force_authenticate(user=self.regular_user)
+
+        response = self.client.delete(
+            reverse(
+                'api_author_detail_update_destroy',
+                kwargs={'pk': self.author.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Author.objects.filter(pk=self.author.pk).exists()
+        )
+
+    def test_admin_can_create_author(self):
+        self.client.force_authenticate(user=self.admin_user)
+
+        response = self.client.post(
+            reverse('api_author_list_create'),
+            {
+                'fullname': 'Ray Bradbury',
+                'biography': 'American writer.',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            Author.objects.filter(
+                fullname='Ray Bradbury',
+            ).exists()
+        )
+
+    def test_admin_can_update_author(self):
+        self.client.force_authenticate(user=self.admin_user)
+
+        response = self.client.patch(
+            reverse(
+                'api_author_detail_update_destroy',
+                kwargs={'pk': self.author.pk},
+            ),
+            {
+                'fullname': 'Isaac Asimov Updated',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.author.refresh_from_db()
+
+        self.assertEqual(
+            self.author.fullname,
+            'Isaac Asimov Updated',
+        )
+
+    def test_admin_can_delete_author(self):
+        self.client.force_authenticate(user=self.admin_user)
+
+        response = self.client.delete(
+            reverse(
+                'api_author_detail_update_destroy',
+                kwargs={'pk': self.author.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Author.objects.filter(pk=self.author.pk).exists()
+        )
+
+    def test_regular_user_cannot_create_genre(self):
+        self.client.force_authenticate(user=self.regular_user)
+
+        response = self.client.post(
+            reverse('api_genre_list_create'),
+            {
+                'name': 'Fantasy',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_regular_user_cannot_update_genre(self):
+        self.client.force_authenticate(user=self.regular_user)
+
+        response = self.client.patch(
+            reverse(
+                'api_genre_detail_update_destroy',
+                kwargs={'pk': self.genre.pk},
+            ),
+            {
+                'name': 'Changed Genre',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.genre.refresh_from_db()
+
+        self.assertEqual(
+            self.genre.name,
+            'Science Fiction',
+        )
+
+    def test_regular_user_cannot_delete_genre(self):
+        self.client.force_authenticate(user=self.regular_user)
+
+        response = self.client.delete(
+            reverse(
+                'api_genre_detail_update_destroy',
+                kwargs={'pk': self.genre.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Genre.objects.filter(pk=self.genre.pk).exists()
+        )
+
+    def test_admin_can_create_genre(self):
+        self.client.force_authenticate(user=self.admin_user)
+
+        response = self.client.post(
+            reverse('api_genre_list_create'),
+            {
+                'name': 'Fantasy',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            Genre.objects.filter(name='Fantasy').exists()
+        )
+
+    def test_admin_can_update_genre(self):
+        self.client.force_authenticate(user=self.admin_user)
+
+        response = self.client.patch(
+            reverse(
+                'api_genre_detail_update_destroy',
+                kwargs={'pk': self.genre.pk},
+            ),
+            {
+                'name': 'Science Fiction Updated',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.genre.refresh_from_db()
+
+        self.assertEqual(
+            self.genre.name,
+            'Science Fiction Updated',
+        )
+
+    def test_admin_can_delete_genre(self):
+        self.client.force_authenticate(user=self.admin_user)
+
+        response = self.client.delete(
+            reverse(
+                'api_genre_detail_update_destroy',
+                kwargs={'pk': self.genre.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Genre.objects.filter(pk=self.genre.pk).exists()
+        )

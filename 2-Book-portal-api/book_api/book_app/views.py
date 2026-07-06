@@ -1,13 +1,17 @@
 #book_app/views.py
 from django.db.models import Avg, Count, Prefetch
-from rest_framework import mixins
+from django.shortcuts import get_object_or_404
+from rest_framework import mixins, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveAPIView,
 )
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
-from .models import Author, Book, Genre, Review
+
+from .models import Author, Book, Genre, Review, Rating
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
     AuthorDetailSerializer,
@@ -21,6 +25,7 @@ from .serializers import (
     GenreWriteSerializer,
     ReviewListSerializer,
     ReviewWriteSerializer,
+    RatingSerializer,
 )
 
 
@@ -374,3 +379,56 @@ class ReviewDetailUpdateDestroyAPIView(
             **kwargs,
         )
 
+class BookRatingAPIView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def put(self, request, pk):
+        book = get_object_or_404(
+            Book,
+            pk=pk,
+        )
+
+        serializer = RatingSerializer(
+            data=request.data,
+        )
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        rating, created = Rating.objects.update_or_create(
+            added_by=request.user,
+            book=book,
+            defaults={
+                'value': serializer.validated_data['value'],
+            },
+        )
+
+        response_serializer = RatingSerializer(
+            rating,
+        )
+
+        if created:
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, pk):
+        rating = get_object_or_404(
+            Rating,
+            added_by=request.user,
+            book_id=pk,
+        )
+
+        rating.delete()
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+        )

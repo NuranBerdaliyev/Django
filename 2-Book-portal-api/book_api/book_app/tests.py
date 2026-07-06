@@ -584,3 +584,275 @@ class BookAndReviewCRUDAPITestCase(APITestCase):
         self.assertTrue(
             Review.objects.filter(pk=self.review_a.pk).exists()
         )
+
+class RatingAPITestCase(APITestCase):
+    def setUp(self):
+        self.user_a = User.objects.create_user(
+            username='user_a',
+            password='testpassword123',
+        )
+
+        self.user_b = User.objects.create_user(
+            username='user_b',
+            password='testpassword123',
+        )
+
+        self.author = Author.objects.create(
+            fullname='Frank Herbert',
+            biography='American science-fiction writer.',
+        )
+
+        self.book = Book.objects.create(
+            added_by=self.user_a,
+            title='Dune',
+            description='Science-fiction novel.',
+            published_year=1965,
+            author=self.author,
+        )
+
+    def test_guest_cannot_rate_book(self):
+        response = self.client.put(
+            reverse(
+                'api_book_rating',
+                kwargs={'pk': self.book.pk},
+            ),
+            {
+                'value': 5,
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+        self.assertFalse(
+            Rating.objects.filter(
+                book=self.book,
+            ).exists()
+        )
+
+    def test_authenticated_user_can_create_rating(self):
+        self.client.force_authenticate(
+            user=self.user_a,
+        )
+
+        response = self.client.put(
+            reverse(
+                'api_book_rating',
+                kwargs={'pk': self.book.pk},
+            ),
+            {
+                'value': 4,
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        rating = Rating.objects.get(
+            added_by=self.user_a,
+            book=self.book,
+        )
+
+        self.assertEqual(
+            rating.value,
+            4,
+        )
+
+        self.assertEqual(
+            response.data['book'],
+            self.book.pk,
+        )
+
+        self.assertEqual(
+            response.data['value'],
+            4,
+        )
+
+    def test_put_updates_existing_rating_instead_of_creating_second_one(self):
+        Rating.objects.create(
+            added_by=self.user_a,
+            book=self.book,
+            value=2,
+        )
+
+        self.client.force_authenticate(
+            user=self.user_a,
+        )
+
+        response = self.client.put(
+            reverse(
+                'api_book_rating',
+                kwargs={'pk': self.book.pk},
+            ),
+            {
+                'value': 5,
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            Rating.objects.filter(
+                added_by=self.user_a,
+                book=self.book,
+            ).count(),
+            1,
+        )
+
+        rating = Rating.objects.get(
+            added_by=self.user_a,
+            book=self.book,
+        )
+
+        self.assertEqual(
+            rating.value,
+            5,
+        )
+
+    def test_different_users_can_rate_same_book(self):
+        Rating.objects.create(
+            added_by=self.user_a,
+            book=self.book,
+            value=4,
+        )
+
+        self.client.force_authenticate(
+            user=self.user_b,
+        )
+
+        response = self.client.put(
+            reverse(
+                'api_book_rating',
+                kwargs={'pk': self.book.pk},
+            ),
+            {
+                'value': 5,
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            Rating.objects.filter(
+                book=self.book,
+            ).count(),
+            2,
+        )
+
+    def test_user_can_delete_own_rating(self):
+        Rating.objects.create(
+            added_by=self.user_a,
+            book=self.book,
+            value=4,
+        )
+
+        self.client.force_authenticate(
+            user=self.user_a,
+        )
+
+        response = self.client.delete(
+            reverse(
+                'api_book_rating',
+                kwargs={'pk': self.book.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Rating.objects.filter(
+                added_by=self.user_a,
+                book=self.book,
+            ).exists()
+        )
+
+    def test_user_cannot_delete_other_users_rating(self):
+        Rating.objects.create(
+            added_by=self.user_a,
+            book=self.book,
+            value=4,
+        )
+
+        self.client.force_authenticate(
+            user=self.user_b,
+        )
+
+        response = self.client.delete(
+            reverse(
+                'api_book_rating',
+                kwargs={'pk': self.book.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+        self.assertTrue(
+            Rating.objects.filter(
+                added_by=self.user_a,
+                book=self.book,
+            ).exists()
+        )
+
+    def test_rating_changes_book_average_rating(self):
+        Rating.objects.create(
+            added_by=self.user_a,
+            book=self.book,
+            value=4,
+        )
+
+        self.client.force_authenticate(
+            user=self.user_b,
+        )
+
+        self.client.put(
+            reverse(
+                'api_book_rating',
+                kwargs={'pk': self.book.pk},
+            ),
+            {
+                'value': 5,
+            },
+            format='json',
+        )
+
+        response = self.client.get(
+            reverse(
+                'api_book_detail_update_destroy',
+                kwargs={'pk': self.book.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data['average_rating'],
+            4.5,
+        )
+
+        self.assertEqual(
+            response.data['ratings_count'],
+            2,
+        )

@@ -1,6 +1,6 @@
 #book_app/serializers.py
 from rest_framework import serializers
-from .models import Author, Book, Genre, Review
+from .models import Author, Book, Genre, Review, Rating
 
 class AuthorListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -232,4 +232,21 @@ class GenreWriteSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id',
+        ]
+    
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = [
+            'id',
+            'book',
+            'value',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id',
+            'book',
+            'created_at',
+            'updated_at',
         ]

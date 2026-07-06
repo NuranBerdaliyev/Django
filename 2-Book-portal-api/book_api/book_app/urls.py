@@ -3,12 +3,12 @@ from django.urls import path
 from .views import (
     AuthorDetailAPIView,
     AuthorListAPIView,
-    BookDetailAPIView,
-    BookListAPIView,
+    BookDetailUpdateDestroyAPIView,
+    BookListCreateAPIView,
     GenreDetailAPIView,
     GenreListAPIView,
-    ReviewListAPIView,
-    ReviewDetailAPIView,
+    ReviewListCreateAPIView,
+    ReviewDetailUpdateDestroyAPIView,
 )
 
 urlpatterns = [
@@ -18,9 +18,9 @@ urlpatterns = [
     path('genres/', GenreListAPIView.as_view(), name='api_genre_list'),
     path('genres/<int:pk>/', GenreDetailAPIView.as_view(), name='api_genre_detail'),
 
-    path('books/', BookListAPIView.as_view(), name='api_book_list'),
-    path('books/<int:pk>/', BookDetailAPIView.as_view(), name='api_book_detail'),
+    path('books/', BookListCreateAPIView.as_view(), name='api_book_list_create'),
+    path('books/<int:pk>/', BookDetailUpdateDestroyAPIView.as_view(), name='api_book_detail_update_destroy'),
 
-    path('reviews/', ReviewListAPIView.as_view(), name='api_reviews_list'),
-    path('reviews/<int:pk>/', ReviewDetailAPIView.as_view(), name='api_reviews_detail'),
+    path('reviews/', ReviewListCreateAPIView.as_view(), name='api_reviews_list_create'),
+    path('reviews/<int:pk>/', ReviewDetailUpdateDestroyAPIView.as_view(), name='api_reviews_detail_update_destroy'),
 ]

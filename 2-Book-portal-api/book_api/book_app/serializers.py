@@ -112,3 +112,100 @@ class BookDetailSerializer(serializers.ModelSerializer):
             'ratings_count',
             'reviews',
         ]
+
+class BookWriteSerializer(serializers.ModelSerializer):
+    genres = serializers.PrimaryKeyRelatedField(
+        queryset=Genre.objects.all(),
+        many=True,
+        required=False,
+    )
+
+    class Meta:
+        model = Book
+        fields = [
+            'id',
+            'title',
+            'description',
+            'published_year',
+            'author',
+            'genres',
+            'created_at',
+        ]
+        read_only_fields = [
+            'id',
+            'created_at',
+        ]
+
+    def validate(self, attrs):
+        request = self.context['request']
+
+        title = attrs.get(
+            'title',
+            self.instance.title if self.instance else None,
+        )
+        author = attrs.get(
+            'author',
+            self.instance.author if self.instance else None,
+        )
+
+        books = Book.objects.filter(
+            added_by=request.user,
+            title=title,
+            author=author,
+        )
+
+        if self.instance:
+            books = books.exclude(pk=self.instance.pk)
+
+        if books.exists():
+            raise serializers.ValidationError(
+                {
+                    'non_field_errors': [
+                        'You have already added this book.'
+                    ]
+                }
+            )
+
+        return attrs
+
+
+class ReviewWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = [
+            'id',
+            'book',
+            'text',
+            'created_at',
+        ]
+        read_only_fields = [
+            'id',
+            'created_at',
+        ]
+
+    def validate(self, attrs):
+        request = self.context['request']
+
+        book = attrs.get(
+            'book',
+            self.instance.book if self.instance else None,
+        )
+
+        reviews = Review.objects.filter(
+            added_by=request.user,
+            book=book,
+        )
+
+        if self.instance:
+            reviews = reviews.exclude(pk=self.instance.pk)
+
+        if reviews.exists():
+            raise serializers.ValidationError(
+                {
+                    'non_field_errors': [
+                        'You have already reviewed this book.'
+                    ]
+                }
+            )
+
+        return attrs

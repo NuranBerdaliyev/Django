@@ -1,14 +1,25 @@
+#book_app/views.py
 from django.db.models import Avg, Count, Prefetch
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework import mixins
+from rest_framework.generics import (
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveAPIView,
+)
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
 from .models import Author, Book, Genre, Review
+from .permissions import IsOwnerOrReadOnly
 from .serializers import (
     AuthorDetailSerializer,
     AuthorListSerializer,
     BookDetailSerializer,
     BookListSerializer,
+    BookWriteSerializer,
     GenreDetailSerializer,
     GenreListSerializer,
     ReviewSerializer,
+    ReviewWriteSerializer,
 )
 
 
@@ -103,8 +114,11 @@ class GenreDetailAPIView(RetrieveAPIView):
         )
 
 
-class BookListAPIView(ListAPIView):
-    serializer_class = BookListSerializer
+class BookListCreateAPIView(ListCreateAPIView):
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly,
+    ]
 
     filterset_fields = [
         'author',
@@ -130,6 +144,12 @@ class BookListAPIView(ListAPIView):
         '-created_at',
     ]
 
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return BookWriteSerializer
+
+        return BookListSerializer
+
     def get_queryset(self):
         return (
             Book.objects.select_related(
@@ -144,9 +164,25 @@ class BookListAPIView(ListAPIView):
             )
         )
 
+    def perform_create(self, serializer):
+        serializer.save(
+            added_by=self.request.user,
+        )
 
-class BookDetailAPIView(RetrieveAPIView):
-    serializer_class = BookDetailSerializer
+
+class BookDetailUpdateDestroyAPIView(RetrieveAPIView, mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+):
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly,
+    ]
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return BookWriteSerializer
+
+        return BookDetailSerializer
 
     def get_queryset(self):
         return (
@@ -171,18 +207,31 @@ class BookDetailAPIView(RetrieveAPIView):
             )
         )
 
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(
+            request,
+            *args,
+            **kwargs,
+        )
 
-class ReviewListAPIView(ListAPIView):
-    serializer_class = ReviewSerializer
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(
+            request,
+            *args,
+            **kwargs,
+        )
 
-    filterset_fields = {
-        'book': [
-            'exact',
-        ],
-        'added_by__username': [
-            'exact',
-        ],
-    }
+
+class ReviewListCreateAPIView(ListCreateAPIView):
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly,
+    ]
+
+    filterset_fields = [
+        'book',
+        'added_by__username',
+    ]
 
     search_fields = [
         'text',
@@ -198,18 +247,56 @@ class ReviewListAPIView(ListAPIView):
         '-created_at',
     ]
 
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ReviewWriteSerializer
+
+        return ReviewSerializer
+
     def get_queryset(self):
         return Review.objects.select_related(
             'book',
             'added_by',
         )
 
+    def perform_create(self, serializer):
+        serializer.save(
+            added_by=self.request.user,
+        )
 
-class ReviewDetailAPIView(RetrieveAPIView):
-    serializer_class = ReviewSerializer
+
+class ReviewDetailUpdateDestroyAPIView(
+    RetrieveAPIView,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+):
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        IsOwnerOrReadOnly,
+    ]
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return ReviewWriteSerializer
+
+        return ReviewSerializer
 
     def get_queryset(self):
         return Review.objects.select_related(
             'book',
             'added_by',
+        )
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(
+            request,
+            *args,
+            **kwargs,
+        )
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(
+            request,
+            *args,
+            **kwargs,
         )

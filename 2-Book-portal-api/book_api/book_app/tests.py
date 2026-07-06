@@ -81,7 +81,9 @@ class ReadOnlyAPITestCase(APITestCase):
         )
 
     def test_book_list_returns_books(self):
-        response = self.client.get(reverse('api_book_list'))
+        response = self.client.get(
+            reverse('api_book_list_create')
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 3)
@@ -98,11 +100,13 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_detail_returns_full_information(self):
         response = self.client.get(
-            reverse('api_book_detail', kwargs={'pk': self.book_one.pk})
+            reverse(
+                'api_book_detail_update_destroy',
+                kwargs={'pk': self.book_one.pk},
+            )
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertEqual(response.data['title'], 'Animal Farm')
         self.assertEqual(response.data['added_by'], self.user.username)
         self.assertEqual(response.data['average_rating'], 4.5)
@@ -116,7 +120,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_list_searches_by_title(self):
         response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {'search': 'Dune'},
         )
 
@@ -126,7 +130,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_list_searches_by_author_name(self):
         response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {'search': 'Orwell'},
         )
 
@@ -135,7 +139,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_list_filters_by_author(self):
         response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {'author': self.author_one.pk},
         )
 
@@ -147,7 +151,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_list_filters_by_genre(self):
         response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {'genres': self.genre_scifi.pk},
         )
 
@@ -157,7 +161,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_list_filters_by_published_year(self):
         response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {'published_year': 1949},
         )
 
@@ -167,7 +171,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_list_orders_by_published_year(self):
         response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {'ordering': 'published_year'},
         )
 
@@ -201,7 +205,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_review_list_filters_by_book(self):
         response = self.client.get(
-            reverse('api_reviews_list'),
+            reverse('api_reviews_list_create'),
             {'book': self.book_one.pk},
         )
 
@@ -214,7 +218,10 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_review_detail_returns_review(self):
         response = self.client.get(
-            reverse('api_reviews_detail', kwargs={'pk': self.review.pk})
+            reverse(
+                'api_reviews_detail_update_destroy',
+                kwargs={'pk': self.review.pk},
+            )
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -229,7 +236,10 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_book_detail_returns_404_for_unknown_book(self):
         response = self.client.get(
-            reverse('api_book_detail', kwargs={'pk': 99999})
+            reverse(
+                'api_book_detail_update_destroy',
+                kwargs={'pk': 99999},
+            )
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -245,7 +255,7 @@ class ReadOnlyAPITestCase(APITestCase):
             )
 
         response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {'ordering': 'title'},
         )
 
@@ -255,7 +265,7 @@ class ReadOnlyAPITestCase(APITestCase):
         self.assertIsNotNone(response.data['next'])
 
         second_page_response = self.client.get(
-            reverse('api_book_list'),
+            reverse('api_book_list_create'),
             {
                 'ordering': 'title',
                 'page': 2,

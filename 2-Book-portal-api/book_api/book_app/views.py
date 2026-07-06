@@ -2,30 +2,32 @@
 from django.db.models import Avg, Count, Prefetch
 from rest_framework import mixins
 from rest_framework.generics import (
-    ListAPIView,
     ListCreateAPIView,
     RetrieveAPIView,
 )
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from .models import Author, Book, Genre, Review
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
     AuthorDetailSerializer,
     AuthorListSerializer,
+    AuthorWriteSerializer,
     BookDetailSerializer,
     BookListSerializer,
     BookWriteSerializer,
     GenreDetailSerializer,
     GenreListSerializer,
-    ReviewSerializer,
+    GenreWriteSerializer,
+    ReviewListSerializer,
     ReviewWriteSerializer,
 )
 
 
-class AuthorListAPIView(ListAPIView):
-    queryset = Author.objects.all()
-    serializer_class = AuthorListSerializer
+class AuthorListCreateAPIView(ListCreateAPIView):
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
 
     search_fields = [
         'fullname',
@@ -40,9 +42,30 @@ class AuthorListAPIView(ListAPIView):
         'fullname',
     ]
 
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return AuthorWriteSerializer
 
-class AuthorDetailAPIView(RetrieveAPIView):
-    serializer_class = AuthorDetailSerializer
+        return AuthorListSerializer
+
+    def get_queryset(self):
+        return Author.objects.all()
+
+
+class AuthorDetailUpdateDestroyAPIView(
+    RetrieveAPIView,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+):
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return AuthorWriteSerializer
+
+        return AuthorDetailSerializer
 
     def get_queryset(self):
         books_queryset = (
@@ -68,10 +91,25 @@ class AuthorDetailAPIView(RetrieveAPIView):
             ),
         )
 
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(
+            request,
+            *args,
+            **kwargs,
+        )
 
-class GenreListAPIView(ListAPIView):
-    queryset = Genre.objects.all()
-    serializer_class = GenreListSerializer
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(
+            request,
+            *args,
+            **kwargs,
+        )
+
+
+class GenreListCreateAPIView(ListCreateAPIView):
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
 
     search_fields = [
         'name',
@@ -85,9 +123,30 @@ class GenreListAPIView(ListAPIView):
         'name',
     ]
 
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return GenreWriteSerializer
 
-class GenreDetailAPIView(RetrieveAPIView):
-    serializer_class = GenreDetailSerializer
+        return GenreListSerializer
+
+    def get_queryset(self):
+        return Genre.objects.all()
+
+
+class GenreDetailUpdateDestroyAPIView(
+    RetrieveAPIView,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+):
+    permission_classes = [
+        IsAdminOrReadOnly,
+    ]
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return GenreWriteSerializer
+
+        return GenreDetailSerializer
 
     def get_queryset(self):
         books_queryset = (
@@ -111,6 +170,20 @@ class GenreDetailAPIView(RetrieveAPIView):
                 'books',
                 queryset=books_queryset,
             ),
+        )
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(
+            request,
+            *args,
+            **kwargs,
+        )
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(
+            request,
+            *args,
+            **kwargs,
         )
 
 
@@ -251,7 +324,7 @@ class ReviewListCreateAPIView(ListCreateAPIView):
         if self.request.method == 'POST':
             return ReviewWriteSerializer
 
-        return ReviewSerializer
+        return ReviewListSerializer
 
     def get_queryset(self):
         return Review.objects.select_related(
@@ -279,7 +352,7 @@ class ReviewDetailUpdateDestroyAPIView(
         if self.request.method == 'PATCH':
             return ReviewWriteSerializer
 
-        return ReviewSerializer
+        return ReviewListSerializer
 
     def get_queryset(self):
         return Review.objects.select_related(
@@ -300,3 +373,4 @@ class ReviewDetailUpdateDestroyAPIView(
             *args,
             **kwargs,
         )
+

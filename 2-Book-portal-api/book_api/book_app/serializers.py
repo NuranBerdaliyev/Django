@@ -62,7 +62,7 @@ class GenreDetailSerializer(serializers.ModelSerializer):
             'books',
         ]
 
-class ReviewSerializer(serializers.ModelSerializer):
+class ReviewListSerializer(serializers.ModelSerializer):
     added_by = serializers.CharField(
         source='added_by.username',
         read_only=True,
@@ -95,7 +95,7 @@ class BookDetailSerializer(serializers.ModelSerializer):
     ratings_count = serializers.IntegerField(
         read_only=True,
     )
-    reviews=ReviewSerializer(many=True, read_only=True)
+    reviews=ReviewListSerializer(many=True, read_only=True)
 
     class Meta:
         model = Book
@@ -209,3 +209,27 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+    
+class AuthorWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Author
+        fields = [
+            'id',
+            'fullname',
+            'biography',
+        ]
+        read_only_fields = [
+            'id',
+        ]
+
+
+class GenreWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = [
+            'id',
+            'name',
+        ]
+        read_only_fields = [
+            'id',
+        ]

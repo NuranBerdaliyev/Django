@@ -9,3 +9,10 @@ class IsOwnerOrReadOnly(BasePermission):
             return True
 
         return obj.added_by == request.user
+
+class IsAdminOrReadOnly(BasePermission):
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+
+        return request.user.is_authenticated and request.user.is_staff

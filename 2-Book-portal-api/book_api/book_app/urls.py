@@ -1,22 +1,22 @@
 #book_app/urls.py
 from django.urls import path
 from .views import (
-    AuthorDetailAPIView,
-    AuthorListAPIView,
+    AuthorDetailUpdateDestroyAPIView,
+    AuthorListCreateAPIView,
     BookDetailUpdateDestroyAPIView,
     BookListCreateAPIView,
-    GenreDetailAPIView,
-    GenreListAPIView,
+    GenreDetailUpdateDestroyAPIView,
+    GenreListCreateAPIView,
     ReviewListCreateAPIView,
     ReviewDetailUpdateDestroyAPIView,
 )
 
 urlpatterns = [
-    path('authors/', AuthorListAPIView.as_view(), name='api_author_list'),
-    path('authors/<int:pk>/', AuthorDetailAPIView.as_view(), name='api_author_detail'),
+    path('authors/', AuthorListCreateAPIView.as_view(), name='api_author_list_create'),
+    path('authors/<int:pk>/', AuthorDetailUpdateDestroyAPIView.as_view(), name='api_author_detail_update_destroy'),
 
-    path('genres/', GenreListAPIView.as_view(), name='api_genre_list'),
-    path('genres/<int:pk>/', GenreDetailAPIView.as_view(), name='api_genre_detail'),
+    path('genres/', GenreListCreateAPIView.as_view(), name='api_genre_list_create'),
+    path('genres/<int:pk>/', GenreDetailUpdateDestroyAPIView.as_view(), name='api_genre_detail_update_destroy'),
 
     path('books/', BookListCreateAPIView.as_view(), name='api_book_list_create'),
     path('books/<int:pk>/', BookDetailUpdateDestroyAPIView.as_view(), name='api_book_detail_update_destroy'),

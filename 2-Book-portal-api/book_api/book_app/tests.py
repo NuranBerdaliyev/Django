@@ -186,7 +186,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_author_detail_returns_author_books(self):
         response = self.client.get(
-            reverse('api_author_detail', kwargs={'pk': self.author_one.pk})
+            reverse('api_author_detail_update_destroy', kwargs={'pk': self.author_one.pk})
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -195,7 +195,7 @@ class ReadOnlyAPITestCase(APITestCase):
 
     def test_genre_detail_returns_genre_books(self):
         response = self.client.get(
-            reverse('api_genre_detail', kwargs={'pk': self.genre_scifi.pk})
+            reverse('api_genre_detail_update_destroy', kwargs={'pk': self.genre_scifi.pk})
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

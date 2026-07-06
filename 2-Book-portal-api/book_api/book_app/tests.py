@@ -281,3 +281,306 @@ class ReadOnlyAPITestCase(APITestCase):
             1,
         )
         self.assertIsNone(second_page_response.data['next'])
+
+class BookAndReviewCRUDAPITestCase(APITestCase):
+    def setUp(self):
+        self.user_a = User.objects.create_user(
+            username='user_a',
+            password='testpassword123',
+        )
+
+        self.user_b = User.objects.create_user(
+            username='user_b',
+            password='testpassword123',
+        )
+
+        self.author = Author.objects.create(
+            fullname='J. R. R. Tolkien',
+            biography='English writer.',
+        )
+
+        self.genre = Genre.objects.create(
+            name='Fantasy',
+        )
+
+        self.book_a = Book.objects.create(
+            added_by=self.user_a,
+            title='The Hobbit',
+            description='A fantasy adventure.',
+            published_year=1937,
+            author=self.author,
+        )
+        self.book_a.genres.add(self.genre)
+
+        self.book_b = Book.objects.create(
+            added_by=self.user_b,
+            title='The Lord of the Rings',
+            description='An epic fantasy novel.',
+            published_year=1954,
+            author=self.author,
+        )
+        self.book_b.genres.add(self.genre)
+
+        self.review_a = Review.objects.create(
+            added_by=self.user_a,
+            book=self.book_a,
+            text='A great book.',
+        )
+
+        self.review_b = Review.objects.create(
+            added_by=self.user_b,
+            book=self.book_b,
+            text='A classic fantasy story.',
+        )
+
+    def test_guest_cannot_create_book(self):
+        response = self.client.post(
+            reverse('api_book_list_create'),
+            {
+                'title': 'Dune',
+                'description': 'Science-fiction novel.',
+                'published_year': 1965,
+                'author': self.author.pk,
+                'genres': [self.genre.pk],
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_authenticated_user_can_create_book(self):
+        self.client.force_authenticate(user=self.user_a)
+
+        response = self.client.post(
+            reverse('api_book_list_create'),
+            {
+                'title': 'Dune',
+                'description': 'Science-fiction novel.',
+                'published_year': 1965,
+                'author': self.author.pk,
+                'genres': [self.genre.pk],
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        created_book = Book.objects.get(title='Dune')
+
+        self.assertEqual(created_book.added_by, self.user_a)
+        self.assertEqual(created_book.author, self.author)
+        self.assertEqual(created_book.published_year, 1965)
+        self.assertIn(self.genre, created_book.genres.all())
+
+    def test_book_owner_can_patch_own_book(self):
+        self.client.force_authenticate(user=self.user_a)
+
+        response = self.client.patch(
+            reverse(
+                'api_book_detail_update_destroy',
+                kwargs={'pk': self.book_a.pk},
+            ),
+            {
+                'title': 'The Hobbit: Updated Edition',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.book_a.refresh_from_db()
+
+        self.assertEqual(
+            self.book_a.title,
+            'The Hobbit: Updated Edition',
+        )
+
+    def test_other_user_cannot_patch_book(self):
+        self.client.force_authenticate(user=self.user_b)
+
+        response = self.client.patch(
+            reverse(
+                'api_book_detail_update_destroy',
+                kwargs={'pk': self.book_a.pk},
+            ),
+            {
+                'title': 'Stolen Book Title',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.book_a.refresh_from_db()
+
+        self.assertEqual(self.book_a.title, 'The Hobbit')
+
+    def test_book_owner_can_delete_own_book(self):
+        self.client.force_authenticate(user=self.user_a)
+
+        response = self.client.delete(
+            reverse(
+                'api_book_detail_update_destroy',
+                kwargs={'pk': self.book_a.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Book.objects.filter(pk=self.book_a.pk).exists()
+        )
+
+    def test_other_user_cannot_delete_book(self):
+        self.client.force_authenticate(user=self.user_b)
+
+        response = self.client.delete(
+            reverse(
+                'api_book_detail_update_destroy',
+                kwargs={'pk': self.book_a.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Book.objects.filter(pk=self.book_a.pk).exists()
+        )
+
+    def test_guest_cannot_create_review(self):
+        response = self.client.post(
+            reverse('api_reviews_list_create'),
+            {
+                'book': self.book_b.pk,
+                'text': 'Guest review.',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_authenticated_user_can_create_review(self):
+        self.client.force_authenticate(user=self.user_a)
+
+        response = self.client.post(
+            reverse('api_reviews_list_create'),
+            {
+                'book': self.book_b.pk,
+                'text': 'A detailed review by user A.',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        created_review = Review.objects.get(
+            added_by=self.user_a,
+            book=self.book_b,
+        )
+
+        self.assertEqual(
+            created_review.text,
+            'A detailed review by user A.',
+        )
+
+    def test_review_owner_can_patch_own_review(self):
+        self.client.force_authenticate(user=self.user_a)
+
+        response = self.client.patch(
+            reverse(
+                'api_reviews_detail_update_destroy',
+                kwargs={'pk': self.review_a.pk},
+            ),
+            {
+                'text': 'Updated review text.',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.review_a.refresh_from_db()
+
+        self.assertEqual(
+            self.review_a.text,
+            'Updated review text.',
+        )
+
+    def test_other_user_cannot_patch_review(self):
+        self.client.force_authenticate(user=self.user_b)
+
+        response = self.client.patch(
+            reverse(
+                'api_reviews_detail_update_destroy',
+                kwargs={'pk': self.review_a.pk},
+            ),
+            {
+                'text': 'Attempted edit by another user.',
+            },
+            format='json',
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.review_a.refresh_from_db()
+
+        self.assertEqual(
+            self.review_a.text,
+            'A great book.',
+        )
+
+    def test_review_owner_can_delete_own_review(self):
+        self.client.force_authenticate(user=self.user_a)
+
+        response = self.client.delete(
+            reverse(
+                'api_reviews_detail_update_destroy',
+                kwargs={'pk': self.review_a.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Review.objects.filter(pk=self.review_a.pk).exists()
+        )
+
+    def test_other_user_cannot_delete_review(self):
+        self.client.force_authenticate(user=self.user_b)
+
+        response = self.client.delete(
+            reverse(
+                'api_reviews_detail_update_destroy',
+                kwargs={'pk': self.review_a.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Review.objects.filter(pk=self.review_a.pk).exists()
+        )

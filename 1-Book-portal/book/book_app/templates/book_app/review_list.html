@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Reviews
+{% endblock %}
+
+{% block content %}
+
+    <h2>All reviews</h2>
+
+    {% for review in reviews %}
+        <article>
+            <p>
+                <strong>{{ review.added_by.username }}</strong>
+                reviewed
+                <a href="{% url 'book_detail' review.book.pk %}">
+                    {{ review.book.title }}
+                </a>
+            </p>
+
+            <p>
+                {% if review.rating_value %}
+                    Rating: {{ review.rating_value }}/5
+                {% else %}
+                    Rating: no ratings
+                {% endif %}
+            </p>
+
+            <p>
+                {{ review.text|truncatechars:180 }}
+            </p>
+
+            <a href="{% url 'review_detail' review.pk %}">
+                Read full review
+            </a>
+        </article>
+
+        <hr>
+
+    {% empty %}
+        <p>There are no reviews yet.</p>
+    {% endfor %}
+
+{% endblock %}

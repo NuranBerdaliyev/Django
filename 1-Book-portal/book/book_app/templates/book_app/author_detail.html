@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ author.fullname }}
+{% endblock %}
+
+{% block content %}
+
+    <h2>{{ author.fullname }}</h2>
+
+    {% if author.biography %}
+        <h3>Biography</h3>
+        <p>{{ author.biography|linebreaks }}</p>
+    {% endif %}
+
+    <h3>Books by this author</h3>
+
+    {% for book in author.books.all %}
+        <p>
+            <a href="{% url 'book_detail' book.pk %}">
+                {{ book.title }}
+            </a>
+
+            {% if book.published_year %}
+                ({{ book.published_year }})
+            {% endif %}
+        </p>
+    {% empty %}
+        <p>This author has no books yet.</p>
+    {% endfor %}
+
+{% endblock %}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}Book Portal{% endblock %}</title>
+    </head>
+    <body>
+
+        <header>
+            <h1>
+                Book Portal
+            </h1>
+
+            <nav>
+                <a href="{% url 'book_list' %}">Books</a> |
+                <a href="{% url 'author_list' %}">Authors</a> |
+                <a href="{% url 'genre_list' %}">Genres</a> |
+                <a href="{% url 'review_list' %}">Reviews</a>
+                {% if request.user.is_authenticated %}
+                    | <a href="{% url 'my_reading_list' %}">My Reading List</a> |
+                    <a href="{% url 'favorite_list' %}">Favorites</a>
+                {% endif %}
+                {% if request.user.is_authenticated %}
+                    <span>Hello, {{ request.user.username }}</span> |
+                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}">Login</a> |
+                    <a href="{% url 'register' %}">Register</a>
+                {% endif %}
+            </nav>
+        </header>
+        <hr>
+        <main>
+            {% block content %}
+            {% endblock %}
+        </main>
+    </body>
+</html>

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}
+My Reading List
+{% endblock %}
+
+{% block content %}
+
+    <h2>My Reading List</h2>
+
+    <form method="get">
+        <label for="id_status">Status:</label>
+
+        <select name="status" id="id_status">
+            <option value="">All books</option>
+
+            {% for value, label in statuses %}
+                <option
+                    value="{{ value }}"
+                    {% if selected_status == value %}
+                        selected
+                    {% endif %}
+                >
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Filter</button>
+
+        <a href="{% url 'my_reading_list' %}">
+            Reset
+        </a>
+    </form>
+
+    <hr>
+
+    {% for entry in entries %}
+        <article>
+            <h3>
+                <a href="{% url 'book_detail' entry.book.pk %}">
+                    {{ entry.book.title }}
+                </a>
+            </h3>
+
+            <p>
+                Author:
+                <a href="{% url 'author_detail' entry.book.author.pk %}">
+                    {{ entry.book.author.fullname }}
+                </a>
+            </p>
+
+            <p>
+                Status:
+                <strong>{{ entry.get_status_display }}</strong>
+            </p>
+
+            <p>
+                <a href="{% url 'reading_list_update' entry.book.pk %}">
+                    Change status
+                </a>
+            </p>
+
+            <form
+                method="post"
+                action="{% url 'reading_list_delete' entry.book.pk %}"
+            >
+                {% csrf_token %}
+
+                <input
+                    type="hidden"
+                    name="next"
+                    value="{{ request.get_full_path }}"
+                >
+
+                <button type="submit">
+                    Remove from reading list
+                </button>
+            </form>
+        </article>
+
+        <hr>
+
+    {% empty %}
+        <p>Your reading list is empty.</p>
+    {% endfor %}
+
+    {% if is_paginated %}
+        <nav>
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if query_params %}&{{ query_params }}{% endif %}">
+                    First
+                </a>
+
+                <a href="?page={{ page_obj.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Previous
+                </a>
+            {% endif %}
+
+            <span>
+                Page: {{ page_obj.number }}/{{ paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Next
+                </a>
+
+                <a href="?page={{ paginator.num_pages }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Last
+                </a>
+            {% endif %}
+        </nav>
+    {% endif %}
+
+{% endblock %}

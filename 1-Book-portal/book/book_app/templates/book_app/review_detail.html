@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Review for {{ review.book.title }}
+{% endblock %}
+
+{% block content %}
+
+    <article>
+        <h2>Review for "{{ review.book.title }}"</h2>
+
+        <p>
+            <strong>Book:</strong>
+            <a href="{% url 'book_detail' review.book.pk %}">
+                {{ review.book.title }}
+            </a>
+        </p>
+
+        <p>
+            <strong>Author of review:</strong>
+            {{ review.added_by.username }}
+        </p>
+
+        <p>
+            <strong>Rating:</strong>
+            {% if rating %}
+                {{ rating.value }}/5
+            {% else %}
+                No ratings
+            {% endif %}
+        </p>
+
+        <p>
+            <strong>Created:</strong>
+            {{ review.created_at|date:"d.m.Y H:i" }}
+        </p>
+
+        <hr>
+
+        <p>{{ review.text|linebreaks }}</p>
+    </article>
+    {% if request.user == review.added_by %}
+        <a href="{% url 'review_create' review.book.pk %}">
+            Edit review
+        </a>
+        |
+        <a href="{% url 'review_delete' review.pk %}">
+            Delete review
+        </a>
+    {% endif %}
+
+    <p>
+        <a href="{% url 'book_detail' review.book.pk %}">
+            Back to book
+        </a>
+    </p>
+
+{% endblock %}

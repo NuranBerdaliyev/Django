@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if object %}
+        Edit {{ object.title }}
+    {% else %}
+        Add book
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+
+    {% if object %}
+        <h2>Edit book: {{ object.title }}</h2>
+    {% else %}
+        <h2>Add book</h2>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            {% if object %}
+                Save changes
+            {% else %}
+                Add book
+            {% endif %}
+        </button>
+    </form>
+
+    <p>
+        {% if object %}
+            <a href="{% url 'book_detail' object.pk %}">
+                Cancel
+            </a>
+        {% else %}
+            <a href="{% url 'book_list' %}">
+                Cancel
+            </a>
+        {% endif %}
+    </p>
+
+{% endblock %}

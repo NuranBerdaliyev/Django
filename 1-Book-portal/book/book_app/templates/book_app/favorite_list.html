@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Favorites
+{% endblock %}
+
+{% block content %}
+
+    <h2>My Favorites</h2>
+
+    {% for favorite in favorites %}
+        <article>
+            <h3>
+                <a href="{% url 'book_detail' favorite.book.pk %}">
+                    {{ favorite.book.title }}
+                </a>
+            </h3>
+
+            <p>
+                Author:
+                <a href="{% url 'author_detail' favorite.book.author.pk %}">
+                    {{ favorite.book.author.fullname }}
+                </a>
+            </p>
+
+            <form
+                method="post"
+                action="{% url 'favorite_delete' favorite.book.pk %}"
+            >
+                {% csrf_token %}
+
+                <input
+                    type="hidden"
+                    name="next"
+                    value="{{ request.get_full_path }}"
+                >
+
+                <button type="submit">
+                    Remove from favorites
+                </button>
+            </form>
+        </article>
+
+        <hr>
+
+    {% empty %}
+        <p>You have no favorite books yet.</p>
+    {% endfor %}
+
+    {% if is_paginated %}
+        <nav>
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}">
+                    Previous
+                </a>
+            {% endif %}
+
+            <span>
+                Page: {{ page_obj.number }}/{{ paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">
+                    Next
+                </a>
+            {% endif %}
+        </nav>
+    {% endif %}
+
+{% endblock %}

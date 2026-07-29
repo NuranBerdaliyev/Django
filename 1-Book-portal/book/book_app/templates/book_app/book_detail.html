@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ book.title }}
+{% endblock %}
+
+{% block content %}
+
+    <article>
+        <h2>{{ book.title }}</h2>
+
+         <p>
+            <strong>Added by:</strong>
+            {{ book.added_by.username }}
+        </p>
+
+        <p>
+            <strong>Author:</strong>
+            <a href="{% url 'author_detail' book.author.pk %}">
+                {{ book.author.fullname }}
+            </a>
+        </p>
+
+        {% if book.published_year %}
+            <p>
+                <strong>Published year:</strong>
+                {{ book.published_year }}
+            </p>
+        {% endif %}
+
+       
+
+        {% if book.description %}
+            <h3>Description</h3>
+            <p>{{ book.description }}</p>
+        {% endif %}
+
+        <h3>Genres</h3>
+
+        {% for genre in book.genres.all %}
+            <a href="{% url 'genre_detail' genre.pk %}">
+                {{ genre.name }}
+            </a>{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            <p>This book has no genres.</p>
+        {% endfor %}
+
+        {% if request.user == book.added_by %}
+            <p>
+                <a href="{% url 'book_update' book.pk %}">Edit book</a> |
+                <a href="{% url 'book_delete' book.pk %}">Delete book</a>
+            </p>
+        {% endif %}
+    </article>
+
+    <hr>
+
+    <section>
+        <h2>Rating</h2>
+
+        {% if book.ratings_count %}
+            <p>
+                <strong>Average rating:</strong>
+                {{ book.average_rating|floatformat:1 }}/5
+                ({{ book.ratings_count }} rating{{ book.ratings_count|pluralize }})
+            </p>
+        {% else %}
+            <p>There are no ratings yet.</p>
+        {% endif %}
+    </section>
+    <hr>
+    <section>
+    <h2>Reading List</h2>
+
+        {% if request.user.is_authenticated %}
+            {% if reading_list_entry %}
+                <p>
+                    Your status:
+                    <strong>
+                        {{ reading_list_entry.get_status_display }}
+                    </strong>
+                </p>
+
+                <p>
+                    <a href="{% url 'reading_list_update' book.pk %}">
+                        Change status
+                    </a>
+                </p>
+
+                <form method="post" action="{% url 'reading_list_delete' book.pk %}">
+                    {% csrf_token %}
+
+                    <input type="hidden" 
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Remove from reading list
+                    </button>
+                </form>
+            {% else %}
+                <form
+                    method="post"
+                    action="{% url 'reading_list_add' book.pk %}"
+                >
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Add to reading list
+                    </button>
+                </form>
+            {% endif %}
+        {% else %}
+            <p>
+                <a href="{% url 'login' %}?next={{ request.path }}">
+                    Log in to manage your reading list
+                </a>
+            </p>
+        {% endif %}
+    </section>
+
+    <hr>
+    <section>
+        <h2>Favorites</h2>
+
+        {% if request.user.is_authenticated %}
+            {% if is_favorite %}
+                <form
+                    method="post"
+                    action="{% url 'favorite_delete' book.pk %}"
+                >
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Remove from favorites
+                    </button>
+                </form>
+            {% else %}
+                <form
+                    method="post"
+                    action="{% url 'favorite_add' book.pk %}"
+                >
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="next"
+                        value="{{ request.path }}"
+                    >
+
+                    <button type="submit">
+                        Add to favorites
+                    </button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </section>
+    <hr>
+
+    <section>
+        <h2>Reviews</h2>
+
+        {% if request.user.is_authenticated %}
+            <p>
+                <a href="{% url 'review_create' book.pk %}">
+                    Add or edit your review and rating
+                </a>
+            </p>
+        {% else %}
+            <p>
+                <a href="{% url 'login' %}?next={{ request.path }}">
+                    Log in to add a review and rating
+                </a>
+            </p>
+        {% endif %}
+        {% for review in reviews %}
+            <article>
+                <p>
+                    <strong>{{ review.added_by.username }}</strong>
+                </p>
+                {% if review.rating_value %}
+                    <p>
+                        <strong>Rating:</strong>
+                        {{ review.rating_value }}/5
+                    </p>
+                {% else %}
+                    <p>
+                        <strong>Rating:</strong>
+                        No rating
+                    </p>
+                {% endif %}
+                <p>
+                    {{ review.text|truncatechars:180 }}
+                </p>
+
+                <a href="{% url 'review_detail' review.pk %}">
+                    Read full review
+                </a>
+            </article>
+
+            <hr>
+
+        {% empty %}
+            <p>There are no reviews for this book yet.</p>
+        {% endfor %}
+    </section>
+
+{% endblock %}

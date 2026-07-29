@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Books
+{% endblock %}
+
+{% block content %}
+
+    <h2>Books</h2>
+
+    {% if request.user.is_authenticated %}
+        <p>
+            <a href="{% url 'book_create' %}">Add book</a>
+        </p>
+    {% endif %}
+    
+    <form method="get">
+        <p>
+            <label for="id_q">Search by title:</label>
+            <input
+                type="text"
+                name="q"
+                id="id_q"
+                value="{{ search_query }}"
+            >
+        </p>
+
+        <p>
+            <label for="id_genre">Genre:</label>
+
+            <select name="genre" id="id_genre">
+                <option value="">All genres</option>
+
+                {% for genre in genres %}
+                    <option
+                        value="{{ genre.pk }}"
+                        {% if selected_genre == genre.pk|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ genre.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <p>
+            <label for="id_ordering">Sort by:</label>
+
+            <select name="ordering" id="id_ordering">
+                <option value="">Newest added</option>
+
+                <option
+                    value="oldest"
+                    {% if selected_ordering == 'oldest' %}
+                        selected
+                    {% endif %}
+                >
+                    Oldest published
+                </option>
+
+                <option
+                    value="title"
+                    {% if selected_ordering == 'title' %}
+                        selected
+                    {% endif %}
+                >
+                    Title A–Z
+                </option>
+
+                <option
+                    value="rating"
+                    {% if selected_ordering == 'rating' %}
+                        selected
+                    {% endif %}
+                >
+                    Highest rating
+                </option>
+            </select>
+        </p>
+
+        <button type="submit">Apply</button>
+
+        <a href="{% url 'book_list' %}">Reset</a>
+    </form>
+
+    {% for book in books %}
+        <article>
+            <h3>
+                <a href="{% url 'book_detail' book.pk %}">
+                    {{ book.title }}
+                </a>
+            </h3>
+
+            <p>
+                Author:
+                <a href="{% url 'author_detail' book.author.pk %}">
+                    {{ book.author.fullname }}
+                </a>
+            </p>
+
+            {% if book.published_year %}
+                <p>Published: {{ book.published_year }}</p>
+            {% endif %}
+
+            {% if book.average_rating %}
+                <p>
+                    Average rating:
+                    {{ book.average_rating|floatformat:1 }}/5
+                </p>
+            {% else %}
+                <p>Average rating: no ratings yet</p>
+            {% endif %}
+            {% if request.user.is_authenticated %}
+                {% if book.is_in_reading_list %}
+                    <form
+                        method="post"
+                        action="{% url 'reading_list_delete' book.pk %}"
+                    >
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+
+                        <button type="submit">
+                            Remove from reading list
+                        </button>
+                    </form>
+                {% else %}
+                    <form
+                        method="post"
+                        action="{% url 'reading_list_add' book.pk %}"
+                    >
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+
+                        <button type="submit">
+                            Add to reading list
+                        </button>
+                    </form>
+                {% endif %}
+            {% endif %}
+            {% if request.user.is_authenticated %}
+                {% if book.is_favorite %}
+                    <form
+                        method="post"
+                        action="{% url 'favorite_delete' book.pk %}"
+                    >
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+
+                        <button type="submit">
+                            Remove from favorites
+                        </button>
+                    </form>
+                {% else %}
+                    <form
+                        method="post"
+                        action="{% url 'favorite_add' book.pk %}"
+                    >
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+
+                        <button type="submit">
+                            Add to favorites
+                        </button>
+                    </form>
+                {% endif %}
+            {% endif %}
+            {% if book.genres.all %}
+                <p>
+                    Genres:
+                    {% for genre in book.genres.all %}
+                        <a href="{% url 'genre_detail' genre.pk %}">
+                            {{ genre.name }}
+                        </a>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+            {% endif %}
+        </article>
+
+        <hr>
+
+    {% empty %}
+        <p>There are no books yet.</p>
+    {% endfor %}
+    {% if is_paginated %}
+        <nav>
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if query_params %}&{{ query_params }}{% endif %}">
+                    First
+                </a>
+
+                <a href="?page={{ page_obj.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Previous
+                </a>
+            {% endif %}
+
+            <span>
+                Page: {{ page_obj.number }}/{{ paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Next
+                </a>
+
+                <a href="?page={{ paginator.num_pages }}{% if query_params %}&{{ query_params }}{% endif %}">
+                    Last
+                </a>
+            {% endif %}
+        </nav>
+    {% endif %}
+
+{% endblock %}
